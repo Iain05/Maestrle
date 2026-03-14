@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+@import "tailwindcss";
+
+body {
+  font-family: 'Inter', sans-serif;
+  transition: background-color 0.3s ease;
+  box-sizing: border-box;
+  height: 100%;
+  margin: 0;
+  overflow: auto;
+  background-color: #f8fafc;
+}
+
+.serif {
+  font-family: 'Playfair Display', serif;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
