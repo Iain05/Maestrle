@@ -12,5 +12,6 @@
     <include file="db/changelog/changes/005-create-tbl-excerpt-day.xml"/>
     <include file="db/changelog/changes/006-create-tbl-user-point.xml"/>
     <include file="db/changelog/changes/007-alter-user-tables.xml"/>
+    <include file="db/changelog/changes/008-create-tbl-user-guess.xml"/>
 
 </databaseChangeLog>

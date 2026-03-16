@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { login as apiLogin, register as apiRegister, type AuthResponse } from '@src/api/auth';
 
 interface AuthUser {
@@ -37,6 +37,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(stored.token);
   const [user, setUser] = useState<AuthUser | null>(stored.user);
 
+  useEffect(() => {
+    if (!stored.token) return;
+    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${stored.token}` } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const updated: AuthUser = { username: data.username, email: data.email, totalPoints: data.totalPoints };
+        localStorage.setItem(USER_KEY, JSON.stringify(updated));
+        setUser(updated);
+      })
+      .catch(() => {});
+  }, []);
+
   function persist(res: AuthResponse) {
     const u: AuthUser = { username: res.username, email: res.email, totalPoints: res.totalPoints };
     localStorage.setItem(TOKEN_KEY, res.token);
@@ -56,8 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   function logout() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
-    setToken(null);
-    setUser(null);
+    window.location.reload();
   }
 
   function addPoints(points: number) {

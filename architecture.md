@@ -8,13 +8,13 @@ ComposerGuesser is a daily classical music identification game. Users listen to 
 
 ## Tech Stack
 
-| Layer     | Technology                                          |
-|-----------|-----------------------------------------------------|
-| Frontend  | React 19, TypeScript, Vite, Tailwind CSS            |
-| Backend   | Spring Boot 4, Java 17, Spring Data JPA, Liquibase  |
-| Database  | PostgreSQL                                          |
-| Audio     | nginx static file server                            |
-| Infra     | Docker Compose, named volumes                       |
+| Layer     | Technology                                                           |
+|-----------|----------------------------------------------------------------------|
+| Frontend  | React 19, TypeScript, Vite, Tailwind CSS                             |
+| Backend   | Spring Boot 4, Java 17, Spring Data JPA, Liquibase, Spring Security  |
+| Database  | PostgreSQL 17                                                        |
+| Audio     | nginx static file server                                             |
+| Infra     | Docker Compose, named volumes                                        |
 
 ---
 
@@ -92,16 +92,16 @@ The `audio-files` volume is populated manually by copying mp3 files into it on t
 ## Data Model
 
 ### `tbl_composer`
-| Column                 | Type         | Notes                                |
-|------------------------|--------------|--------------------------------------|
-| composer_id            | BIGINT       | Primary key, auto-increment          |
-| first_name             | VARCHAR(100) | Not null                             |
-| last_name              | VARCHAR(100) | Not null                             |
-| birth_year             | INT          | Not null                             |
-| death_year             | INT          | Nullable                             |
-| era                    | era_type     | PostgreSQL enum: `BAROQUE`, `CLASSICAL`, `EARLY_ROMANTIC`, etc |
-| nationality            | VARCHAR(100) |                                      |
-| number_of_compositions | INT          | Nullable                             |
+| Column                 | Type         | Notes                                                          |
+|------------------------|--------------|----------------------------------------------------------------|
+| composer_id            | BIGINT       | Primary key, auto-increment                                    |
+| first_name             | VARCHAR(100) | Not null                                                       |
+| last_name              | VARCHAR(100) | Not null                                                       |
+| birth_year             | INT          | Not null                                                       |
+| death_year             | INT          | Nullable                                                       |
+| era                    | era_type     | PostgreSQL enum: `BAROQUE`, `CLASSICAL`, `EARLY_ROMANTIC`, `LATE_ROMANTIC`, `MODERN` |
+| nationality            | VARCHAR(100) | ISO 3166-1 alpha-2 country code (e.g. `FR`, `DE`)             |
+| number_of_compositions | INT          | Nullable                                                       |
 
 ### `tbl_user`
 | Column        | Type         | Notes                        |
@@ -109,7 +109,7 @@ The `audio-files` volume is populated manually by copying mp3 files into it on t
 | user_id       | BIGINT       | Primary key, auto-increment  |
 | username      | VARCHAR(50)  | Not null, unique             |
 | email         | VARCHAR(255) | Not null, unique             |
-| password_hash | VARCHAR(255) | Not null                     |
+| password_hash | VARCHAR(255) | BCrypt hash, not null        |
 | total_points  | INT          | Not null, default 0          |
 | created_at    | TIMESTAMP    | Not null                     |
 
@@ -133,14 +133,29 @@ The `audio-files` volume is populated manually by copying mp3 files into it on t
 | date       | DATE   | Primary key                    |
 | excerpt_id | BIGINT | FK → tbl_excerpt, not null     |
 
+One row per calendar day. The backend resolves today's date in `America/Vancouver` and looks up this table to find the active excerpt.
+
 ### `tbl_user_point`
-| Column          | Type      | Notes                              |
-|-----------------|-----------|------------------------------------|
-| point_id        | BIGINT    | Primary key, auto-increment        |
-| user_id         | BIGINT    | FK → tbl_user, not null            |
-| excerpt_day_date| DATE      | FK → tbl_excerpt_day, not null     |
-| points          | INT       | Not null                           |
-| earned_at       | TIMESTAMP | Not null                           |
+| Column           | Type      | Notes                                                        |
+|------------------|-----------|--------------------------------------------------------------|
+| point_id         | BIGINT    | Primary key, auto-increment                                  |
+| user_id          | BIGINT    | FK → tbl_user, not null                                      |
+| excerpt_day_date | DATE      | FK → tbl_excerpt_day, not null                               |
+| points           | INT       | Not null                                                     |
+| earned_at        | TIMESTAMP | Not null                                                     |
+
+Unique constraint on `(user_id, excerpt_day_date)` — points are awarded at most once per user per day.
+
+### `tbl_user_guess`
+| Column      | Type   | Notes                                                              |
+|-------------|--------|--------------------------------------------------------------------|
+| guess_id    | BIGINT | Primary key, auto-increment                                        |
+| user_id     | BIGINT | FK → tbl_user, not null                                            |
+| excerpt_id  | BIGINT | FK → tbl_excerpt, not null                                         |
+| composer_id | BIGINT | FK → tbl_composer — the composer the user guessed, not null        |
+| guess_number| INT    | 1-based index of this guess within the user's session for the day  |
+
+Only populated for authenticated users. Guest play is fully supported but no guesses are persisted.
 
 ---
 
@@ -148,13 +163,16 @@ The `audio-files` volume is populated manually by copying mp3 files into it on t
 
 All routes are prefixed with `/api` (configured in `application.properties`).
 
-| Method | Route                         | Description                                                |
-|--------|-------------------------------|------------------------------------------------------------|
-| GET    | `/api/health`                 | Health check                                               |
-| GET    | `/api/composers`              | List all composers — returns `composerId` and `name` only  |
-| GET    | `/api/composers/{id}`         | Get full details for a single composer                     |
-| GET    | `/api/excerpt/daily-challenge`| Get today's excerpt (Pacific time)                         |
-| POST   | `/api/guess`                  | Submit a guess, returns hint feedback                      |
+| Method | Route                          | Auth required | Description                                      |
+|--------|--------------------------------|---------------|--------------------------------------------------|
+| GET    | `/api/health`                  | No            | Health check                                     |
+| GET    | `/api/composers`               | No            | List all composers (id + name only)              |
+| GET    | `/api/composers/{id}`          | No            | Full details for a single composer               |
+| GET    | `/api/excerpt/daily-challenge` | No            | Today's excerpt and audio URL                    |
+| POST   | `/api/guess`                   | No (optional) | Submit a guess; authenticated users earn points  |
+| POST   | `/api/auth/register`           | No            | Create a new account                             |
+| POST   | `/api/auth/login`              | No            | Sign in, receive JWT                             |
+| GET    | `/api/auth/me`                 | Yes (JWT)     | Get current user profile                         |
 
 ### `/api/composers` response shape
 ```json
@@ -184,6 +202,8 @@ The date is resolved server-side in `America/Vancouver` — the client has no in
 }
 ```
 
+The `excerptId` must match today's active daily challenge or the request is rejected with 400.
+
 **Response:**
 ```json
 {
@@ -191,21 +211,79 @@ The date is resolved server-side in `America/Vancouver` — the client has no in
   "composerName": "Wolfgang Amadeus Mozart",
   "birthYear": 1756,
   "era": "CLASSICAL",
-  "nationality": "Austrian",
+  "nationality": "AT",
   "composerHint": "wrong",
   "yearHint": "TOO_LOW",
   "eraHint": "close",
   "nationalityHint": "wrong",
   "pieceTitle": "Symphony No. 7 in A major - II. Allegretto",
-  "targetComposerName": "Ludwig van Beethoven"
+  "targetComposerName": "Ludwig van Beethoven",
+  "pointsEarned": 0
 }
 ```
 
-`yearHint` is `CORRECT`, `TOO_LOW`, or `TOO_HIGH`. `eraHint` is `correct`, `close` (adjacent era), or `wrong`. `targetComposerName` and `pieceTitle` are always returned so the end screen can show the answer regardless of win/loss.
+- `yearHint`: `CORRECT`, `TOO_LOW`, or `TOO_HIGH`
+- `eraHint`: `correct`, `close` (one era apart), or `wrong`
+- `targetComposerName` and `pieceTitle` are always returned so the end screen can show the answer regardless of win/loss
+- `pointsEarned`: points awarded this guess (only non-zero on a correct guess by an authenticated user who hasn't already scored today)
 
-### Audio URL Strategy
+### Points system
 
-Audio is served by a dedicated nginx container (`audio-server`) from a mounted volume. The frontend nginx proxies `/audio/` to the audio-server, and `/api/` to the backend — so the browser only ever talks to one host. nginx handles HTTP Range requests natively, which is required for the `<audio>` element to support seeking.
+Points are awarded on a correct guess, scaled by how many guesses it took:
+
+| Guess number | Points |
+|--------------|--------|
+| 1            | 10     |
+| 2            | 9      |
+| 3            | 8      |
+| 4            | 7      |
+| 5            | 6      |
+
+Formula: `11 - guessNumber`. Points are awarded at most once per user per day (enforced by both a DB unique constraint and a service-level check).
+
+### `/api/auth/register` request / response
+
+**Request:**
+```json
+{ "username": "mozartfan", "email": "user@example.com", "password": "hunter2" }
+```
+
+**Response:**
+```json
+{ "token": "<jwt>", "username": "mozartfan", "email": "user@example.com", "totalPoints": 0 }
+```
+
+Returns 400 if the email is already registered.
+
+### `/api/auth/login` request / response
+
+**Request:**
+```json
+{ "email": "mozartfan", "password": "hunter2" }
+```
+
+The `email` field accepts either an email address or a username.
+
+**Response:** same shape as `/register`. Returns 401 on bad credentials.
+
+### `/api/auth/me` response
+
+```json
+{ "token": null, "username": "mozartfan", "email": "user@example.com", "totalPoints": 42 }
+```
+
+`token` is null — clients reuse their existing token. Returns 401 if no valid JWT is provided.
+
+---
+
+## Authentication
+
+The backend uses **stateless JWT authentication** via Spring Security.
+
+- Tokens are signed with HMAC-SHA256 using a secret from `jwt.secret` (Base64-encoded, min 32 bytes)
+- Token expiry is configured via `jwt.expiration` (milliseconds, default 24 hours)
+- In production, set `JWT_SECRET` in `backend/.env` to override the dev default
+- The `JwtAuthFilter` runs on every request, parses the `Authorization: Bearer <token>` header, and populates the Spring Security context — all endpoints remain publicly accessible, but authenticated requests get richer behaviour (guess persistence, point tracking)
 
 ---
 

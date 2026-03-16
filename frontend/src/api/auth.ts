@@ -11,7 +11,10 @@ export async function register(username: string, email: string, password: string
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, email, password }),
   });
-  if (!res.ok) throw new Error('Registration failed');
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? 'Registration failed');
+  }
   return res.json();
 }
 
@@ -21,6 +24,9 @@ export async function login(email: string, password: string): Promise<AuthRespon
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) throw new Error('Invalid email or password');
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? 'Invalid email or password');
+  }
   return res.json();
 }

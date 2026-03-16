@@ -8,9 +8,11 @@ import { useGameState } from '@src/hooks/useGameState';
 import { getDailyChallenge } from '@src/api/excerpt';
 import { getComposers, type ComposerSummary } from '@src/api/composer';
 import { useAuth } from '@src/context/AuthContext';
+import { useToast } from '@src/context/ToastContext';
 
 const DailyComposer: React.FC = () => {
   const { user, token, logout, addPoints } = useAuth();
+  const { showToast } = useToast();
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [excerptId, setExcerptId] = useState<number | null>(null);
@@ -27,8 +29,13 @@ const DailyComposer: React.FC = () => {
     getComposers().then(setComposers).catch(console.error);
   }, []);
 
-  const { guesses, isGameOver, gameKey, won, lastGuess, submitGuess, resetGame } =
+  const { guesses, isGameOver, gameKey, won, lastGuess, submitGuess, isLoading, justFinished } =
     useGameState(excerptId, token, addPoints);
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    if (justFinished) setShowModal(true);
+  }, [justFinished]);
 
   return (
     <>
@@ -75,19 +82,20 @@ const DailyComposer: React.FC = () => {
         <AudioPlayer key={gameKey} audioUrl={audioUrl} />
 
         <GuessControls
-          disabled={isGameOver}
+          disabled={isGameOver || isLoading}
           composers={composers}
           onSubmit={submitGuess}
+          onError={showToast}
         />
 
         <GuessGrid guesses={guesses} />
 
-        {isGameOver && lastGuess && (
+        {showModal && lastGuess && (
           <GameStatus
             won={won}
             composerName={lastGuess.targetComposerName}
             pieceTitle={lastGuess.pieceTitle}
-            onPlayAgain={resetGame}
+            onClose={() => setShowModal(false)}
           />
         )}
       </main>

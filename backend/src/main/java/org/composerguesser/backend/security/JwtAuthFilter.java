@@ -13,6 +13,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * Servlet filter that runs once per request to authenticate users via JWT.
+ * <p>
+ * If the request carries a valid {@code Authorization: Bearer <token>} header,
+ * the filter resolves the corresponding {@link org.composerguesser.backend.model.User}
+ * and sets it as the authenticated principal in the {@link SecurityContextHolder}.
+ * Requests without a token (or with an invalid one) pass through unauthenticated —
+ * all endpoints are publicly accessible, but authenticated users get additional
+ * behaviour such as point tracking.
+ * </p>
+ */
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
@@ -24,6 +35,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         this.userRepository = userRepository;
     }
 
+    /**
+     * Extracts the JWT from the Authorization header, validates it, and populates
+     * the Spring Security context with the authenticated user if valid.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {

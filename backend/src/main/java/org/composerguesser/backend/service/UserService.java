@@ -11,6 +11,11 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+/**
+ * Handles user registration and authentication.
+ * Passwords are hashed with BCrypt and never stored in plaintext.
+ * On success, both methods return a signed JWT alongside the user's public profile data.
+ */
 @Service
 public class UserService {
 
@@ -24,6 +29,13 @@ public class UserService {
         this.jwtUtil = jwtUtil;
     }
 
+    /**
+     * Registers a new user account.
+     *
+     * @param request contains the desired username, email, and plaintext password
+     * @return JWT token and user profile on success
+     * @throws IllegalArgumentException if the email is already in use
+     */
     public AuthResponseDto register(RegisterRequestDto request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email already in use");
@@ -39,6 +51,15 @@ public class UserService {
         return new AuthResponseDto(token, user.getDisplayUsername(), user.getEmail(), user.getTotalPoints());
     }
 
+    /**
+     * Authenticates an existing user by email or username.
+     * The {@code email} field in the request is treated as an identifier and checked
+     * against both email and username columns.
+     *
+     * @param request contains the email/username identifier and plaintext password
+     * @return JWT token and user profile on success
+     * @throws IllegalArgumentException if no matching user is found or the password is incorrect
+     */
     public AuthResponseDto login(LoginRequestDto request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .or(() -> userRepository.findByUsername(request.getEmail()))

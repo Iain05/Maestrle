@@ -5,10 +5,11 @@ import type { ComposerSummary } from '@src/api/composer';
 interface GuessControlsProps {
   disabled: boolean;
   composers: ComposerSummary[];
-  onSubmit: (composerId: number) => Promise<boolean>;
+  onSubmit: (composerId: number) => Promise<string | null>;
+  onError: (message: string) => void;
 }
 
-const GuessControls: React.FC<GuessControlsProps> = ({ disabled, composers, onSubmit }) => {
+const GuessControls: React.FC<GuessControlsProps> = ({ disabled, composers, onSubmit, onError }) => {
   const [composerInput, setComposerInput] = useState('');
   const [selectedComposer, setSelectedComposer] = useState<ComposerSummary | null>(null);
   const [shake, setShake] = useState(false);
@@ -19,18 +20,20 @@ const GuessControls: React.FC<GuessControlsProps> = ({ disabled, composers, onSu
   }
 
   async function handleSubmit() {
+    if (disabled) return;
     if (!selectedComposer) {
       setShake(true);
       setTimeout(() => setShake(false), 500);
       return;
     }
-    const success = await onSubmit(selectedComposer.composerId);
-    if (success) {
+    const error = await onSubmit(selectedComposer.composerId);
+    if (!error) {
       setComposerInput('');
       setSelectedComposer(null);
     } else {
       setShake(true);
       setTimeout(() => setShake(false), 500);
+      onError(error);
     }
   }
 
