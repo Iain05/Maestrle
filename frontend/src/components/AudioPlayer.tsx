@@ -75,35 +75,34 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
         <span className="text-sm font-bold uppercase tracking-wider">Listen to the Mystery</span>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="grid grid-cols-[auto_1fr] gap-x-4">
         <button
           onClick={handlePlayPause}
           disabled={!audioUrl}
-          className="flex items-center justify-center w-16 h-16 rounded-full bg-indigo-600 text-white transition-all active:scale-95 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="row-span-2 self-center flex items-center justify-center w-14 h-14 rounded-full bg-indigo-600 text-white transition-all active:scale-95 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPlaying ? (
-            <Pause className="w-8 h-8 fill-current" />
+            <Pause className="w-6 h-6 fill-current" />
           ) : (
-            <Play className="w-8 h-8 fill-current" />
+            <Play className="w-6 h-6 fill-current" />
           )}
         </button>
 
-        <div className="flex-1 flex flex-col justify-center">
+        <div
+          ref={progressBarRef}
+          className="self-end bg-white rounded-full h-2 overflow-hidden shadow-sm cursor-pointer mt-4"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+        >
           <div
-            ref={progressBarRef}
-            className="bg-white rounded-full h-2 mb-2 overflow-hidden shadow-sm cursor-pointer"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-          >
-            <div
-              className="h-full bg-indigo-600 transition-all duration-75"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-slate-600">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
-          </div>
+            className="h-full bg-indigo-600 transition-all duration-75"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        <div className="flex justify-between text-xs text-slate-600 mt-1">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
         </div>
       </div>
     </div>

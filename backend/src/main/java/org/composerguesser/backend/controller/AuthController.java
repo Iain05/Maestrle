@@ -4,6 +4,7 @@ import org.composerguesser.backend.dto.AuthResponseDto;
 import org.composerguesser.backend.dto.LoginRequestDto;
 import org.composerguesser.backend.dto.RegisterRequestDto;
 import org.composerguesser.backend.model.User;
+import org.composerguesser.backend.security.JwtUtil;
 import org.composerguesser.backend.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,9 +21,11 @@ import java.util.Map;
 public class AuthController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
-    public AuthController(UserService userService) {
+    public AuthController(UserService userService, JwtUtil jwtUtil) {
         this.userService = userService;
+        this.jwtUtil = jwtUtil;
     }
 
     /**
@@ -67,6 +70,7 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<AuthResponseDto> me(@AuthenticationPrincipal User user) {
         if (user == null) return ResponseEntity.status(401).build();
-        return ResponseEntity.ok(new AuthResponseDto(null, user.getDisplayUsername(), user.getEmail(), user.getTotalPoints()));
+        String freshToken = jwtUtil.generateToken(user.getEmail());
+        return ResponseEntity.ok(new AuthResponseDto(freshToken, user.getDisplayUsername(), user.getEmail(), user.getTotalPoints()));
     }
 }

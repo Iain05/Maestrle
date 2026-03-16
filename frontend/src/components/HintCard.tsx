@@ -21,7 +21,7 @@ const HintCard: React.FC<HintCardProps> = ({ text, status }) => {
   }, []);
 
   return (
-    <div className={`hint-card ${statusClass[status]} ${revealed ? 'revealed' : ''}`}>
+    <div className={`guess-card hint-card ${statusClass[status]} ${revealed ? 'revealed' : ''}`}>
       <span className="break-words w-full text-center">{text}</span>
     </div>
   );

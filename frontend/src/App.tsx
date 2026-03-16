@@ -6,7 +6,7 @@ import { ToastProvider } from './context/ToastContext';
 
 function App() {
   return (
-    <div id="app-wrapper" className="h-full w-full flex flex-col items-center py-8 px-4">
+    <div id="app-wrapper" className="h-full w-full flex flex-col items-center pt-4 pb-8 px-4">
       <BrowserRouter>
         <ToastProvider>
           <AuthProvider>

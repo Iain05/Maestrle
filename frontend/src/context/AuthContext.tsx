@@ -46,6 +46,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const updated: AuthUser = { username: data.username, email: data.email, totalPoints: data.totalPoints };
         localStorage.setItem(USER_KEY, JSON.stringify(updated));
         setUser(updated);
+        if (data.token) {
+          localStorage.setItem(TOKEN_KEY, data.token);
+          setToken(data.token);
+        }
       })
       .catch(() => {});
   }, []);

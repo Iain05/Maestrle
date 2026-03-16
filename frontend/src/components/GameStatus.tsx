@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
 
 interface GameStatusProps {
@@ -9,6 +9,13 @@ interface GameStatusProps {
 }
 
 const GameStatus: React.FC<GameStatusProps> = ({ won, composerName, pieceTitle, onClose }) => {
+  const [closing, setClosing] = useState(false);
+
+  function handleClose() {
+    setClosing(true);
+    setTimeout(onClose, 200);
+  }
+
   useEffect(() => {
     if (!won) return;
     confetti({
@@ -22,9 +29,9 @@ const GameStatus: React.FC<GameStatusProps> = ({ won, composerName, pieceTitle, 
   return (
     <div
       className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div className="modal-card bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl text-center">
+      <div className={`modal-card bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl text-center ${closing ? 'closing' : ''}`}>
         {won ? (
           <>
             <div className="text-5xl mb-4">🎼</div>
