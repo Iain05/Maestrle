@@ -14,11 +14,20 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /**
+     * BCrypt password encoder used when registering users and verifying login credentials.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Configures the security filter chain. All endpoints are publicly accessible;
+     * authentication is optional and provides additional behaviour (point tracking, streaks).
+     * CSRF is disabled as this is a stateless JWT API. The {@link JwtAuthFilter} is inserted
+     * before Spring's default username/password filter to populate the security context from the token.
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         return http

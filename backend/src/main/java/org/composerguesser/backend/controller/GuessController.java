@@ -31,6 +31,16 @@ public class GuessController {
         return ResponseEntity.ok(guessService.getGuessHistory(user));
     }
 
+    /**
+     * Processes a composer guess for today's daily challenge.
+     * Returns hint feedback comparing the guessed composer against the correct answer.
+     * If the authenticated user guesses correctly, points are awarded and their streak is updated.
+     *
+     * @param request body containing {@code excerptId} and {@code composerId}
+     * @param user    the authenticated user, or {@code null} for anonymous play
+     * @return 200 with {@link GuessResultDto} containing hints and (on win) points earned,
+     *         or 400 if the guess is invalid (already guessed, game over, unknown composer, etc.)
+     */
     @PostMapping
     public ResponseEntity<?> submitGuess(@RequestBody GuessRequestDto request,
                                          @AuthenticationPrincipal User user) {

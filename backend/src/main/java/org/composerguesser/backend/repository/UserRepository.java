@@ -5,9 +5,11 @@ import org.composerguesser.backend.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -28,4 +30,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = "SELECT COUNT(*) + 1 FROM tbl_user WHERE total_points > (SELECT total_points FROM tbl_user WHERE user_id = :userId)",
            nativeQuery = true)
     int findAllTimeRankByUserId(@Param("userId") Long userId);
+
+    /**
+     * Resets current_streak to 0 for every user who has a streak but no point entry for yesterday.
+     * Returns the number of rows updated.
+     */
+    @Modifying
+    @Query(value = """
+            UPDATE tbl_user SET current_streak = 0
+            WHERE current_streak > 0
+            AND user_id NOT IN (
+                SELECT user_id FROM tbl_user_point WHERE excerpt_day_date = :yesterday
+            )
+            """, nativeQuery = true)
+    int resetExpiredStreaks(@Param("yesterday") LocalDate yesterday);
 }

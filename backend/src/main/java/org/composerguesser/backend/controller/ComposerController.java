@@ -18,6 +18,12 @@ public class ComposerController {
         this.composerRepository = composerRepository;
     }
 
+    /**
+     * Returns a summary list of all composers (id + full name), sorted by database insertion order.
+     * Used to populate the guess search dropdown on the frontend.
+     *
+     * @return 200 with list of {@link ComposerSummaryDto}
+     */
     @GetMapping
     public List<ComposerSummaryDto> getAllComposers() {
         return composerRepository.findAll().stream()
@@ -25,6 +31,12 @@ public class ComposerController {
                 .toList();
     }
 
+    /**
+     * Returns the full details of a single composer by ID.
+     *
+     * @param id the composer's primary key
+     * @return 200 with the {@link Composer} entity, or 404 if not found
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Composer> getComposer(@PathVariable Long id) {
         return composerRepository.findById(id)

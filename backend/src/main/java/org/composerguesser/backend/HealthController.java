@@ -11,6 +11,11 @@ import java.util.Map;
 @RequestMapping
 public class HealthController {
 
+    /**
+     * Simple health check endpoint used by Docker and load balancers to verify the service is up.
+     *
+     * @return 200 with {@code {"status": "UP"}}
+     */
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> health() {
         return ResponseEntity.ok(Map.of("status", "UP"));

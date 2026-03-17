@@ -38,10 +38,11 @@ In dev, only `db` and `audio-server` run in Docker. Frontend and backend run loc
 
 ### Backend package structure (`backend/src/main/java/org/composerguesser/backend/`)
 - `controller/` — REST controllers (`/api` prefix set in `application.properties`)
-- `service/` — Business logic (currently `GuessService`)
-- `model/` — JPA entities (`Composer`, `Excerpt`, `ExcerptDay`, `Era` enum)
+- `service/` — Business logic (`GuessService`, `UserService`, `DailyChallengeScheduler`)
+- `model/` — JPA entities (`Composer`, `ComposerWork`, `Excerpt`, `ExcerptDay`, `User`, `UserGuess`, `UserPoint`, `Era` enum)
 - `repository/` — Spring Data JPA repositories
 - `dto/` — Request/response DTOs
+- `security/` — JWT auth (`JwtUtil`, `JwtAuthFilter`, `SecurityConfig`)
 
 **Config:** `application.properties` imports `backend/.env` via `spring.config.import`. The `.env` file holds datasource URL, credentials, and `audio.base-url`. The JVM timezone is forced to `America/Vancouver` via `pom.xml` `jvmArguments` — this is required because PostgreSQL 17 rejects the legacy `Canada/Pacific` system timezone.
 
@@ -49,11 +50,47 @@ In dev, only `db` and `audio-server` run in Docker. Frontend and backend run loc
 
 **Daily challenge date:** Resolved server-side using `America/Vancouver` timezone — never from the client.
 
+**Authentication:** JWT-based, stateless. Token is returned on register/login as `Authorization: Bearer <token>`. All endpoints are publicly accessible; the token is optional but enables point tracking, streaks, and leaderboard ranking. `@AuthenticationPrincipal User user` will be `null` for anonymous requests.
+
+**Streak system:** `current_streak` is stored on `tbl_user` and updated in `GuessService` on each correct guess (checks for a `tbl_user_point` entry for yesterday; increments if found, resets to 1 otherwise). `DailyChallengeScheduler` resets streaks to 0 at 00:01 each night for users who missed the previous day, and also runs this check on startup in case the backend was down at midnight.
+
+### API endpoints (`/api` prefix)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/auth/register` | — | Create account; returns JWT + profile |
+| POST | `/auth/login` | — | Authenticate; returns JWT + profile |
+| GET | `/auth/me` | Required | Current user's profile |
+| GET | `/composers` | — | All composers (id + name) for the guess dropdown |
+| GET | `/composers/{id}` | — | Single composer details |
+| GET | `/excerpt/daily-challenge` | — | Today's challenge: `{ excerptId, audioUrl }` |
+| GET | `/guess` | Optional | Authenticated user's guess history for today (empty array if anon) |
+| POST | `/guess` | Optional | Submit a guess; returns hint feedback and points earned on win |
+| GET | `/leaderboard/daily` | — | Today's leaderboard, paginated (`?page=0&size=20`) |
+| GET | `/leaderboard/all-time` | — | All-time leaderboard by total points, paginated |
+| GET | `/leaderboard/my-rank` | Required | Caller's all-time rank, daily rank, points, and streak |
+| GET | `/health` | — | `{ "status": "UP" }` — used by Docker health checks |
+
+### Database schema
+
+| Table | Key columns | Notes |
+|-------|-------------|-------|
+| `tbl_user` | `user_id`, `username`, `email`, `password_hash`, `total_points`, `current_streak`, `created_at` | `email` is the JWT subject |
+| `tbl_composer` | `composer_id`, `complete_name`, `last_name`, `birth_year`, `death_year`, `era`, `nationality` | `era` is a PostgreSQL enum |
+| `tbl_composer_work` | `work_id`, `composer_id`, `title`, `genre`, `year` | Optional metadata |
+| `tbl_excerpt` | `excerpt_id`, `composer_id`, `uploaded_by_user_id`, `name`, `filename`, `times_used` | `filename` maps to a file in `./audio-files/`; `times_used` drives round-robin daily selection |
+| `tbl_excerpt_day` | `date` (PK), `excerpt_id` | One row per calendar day; date is the PK |
+| `tbl_user_guess` | `guess_id`, `user_id`, `excerpt_id`, `composer_id`, `guess_number` | Max 5 guesses per user per excerpt |
+| `tbl_user_point` | `point_id`, `user_id`, `excerpt_day_date`, `points`, `earned_at` | Unique per (user, date); `points = 11 - guess_number` (range 6–10) |
+
 ### Frontend structure (`frontend/src/`)
-- `api/` — All fetch calls (`composer.ts`, `excerpt.ts`, `guess.ts`). Add new endpoints here.
-- `pages/DailyComposer/` — The only page. Fetches the daily challenge and composer list on mount, owns `excerptId` and `composers` state, passes them down.
+- `api/` — All fetch calls (`composer.ts`, `excerpt.ts`, `guess.ts`, `leaderboard.ts`). Add new endpoints here.
+- `pages/DailyComposer/` — Main game page. Fetches the daily challenge and composer list on mount, owns `excerptId` and `composers` state, passes them down.
+- `pages/Leaderboard/` — Leaderboard page. Toggles between today/all-time views. Shows a "my rank" card for logged-in users.
+- `pages/SubmitExcerpt/` — Desktop-only excerpt submission page with drag-and-drop audio upload and a waveform trimmer.
 - `hooks/useGameState.ts` — Manages `guesses: GuessResult[]` state. `submitGuess(composerId)` calls `POST /api/guess` and appends the result. `isGameOver` and `won` are derived from guesses.
-- `components/` — `AudioPlayer`, `ComposerSearch`, `GuessControls`, `GuessGrid`, `HintCard`, `GameStatus`
+- `components/` — `AudioPlayer`, `ComposerSearch`, `GuessControls`, `GuessGrid`, `HintCard`, `GameStatus`, `WaveformTrimmer`, `PageLayout`
+- `context/` — `AuthContext` (JWT token, user profile, `addPoints`), `ToastContext` (error toasts)
 - `data/gameData.ts` — Only `MAX_PLAYS` and `MAX_GUESSES` constants remain
 - `types/game.ts` — Only `HintStatus = 'correct' | 'close' | 'wrong'`
 
@@ -68,4 +105,4 @@ In dev, only `db` and `audio-server` run in Docker. Frontend and backend run loc
 4. `POST /api/guess` with `{ excerptId, composerId }` → `GuessResult` with hint fields (`composerHint`, `yearHint`, `eraHint`, `nationalityHint`) and always includes `targetComposerName` + `pieceTitle` for the end screen
 
 ### Era enum
-PostgreSQL `era_type`: `BAROQUE`, `CLASSICAL`, `EARLY_ROMANTIC`, `LATE_ROMANTIC`, `MODERN`. Java `Era` enum matches. Era adjacency (one step apart = "close") is computed by `ordinal()` comparison in `GuessService`.
+PostgreSQL `era_type`: `BAROQUE`, `CLASSICAL`, `EARLY_ROMANTIC`, `ROMANTIC`, `LATE_ROMANTIC`, `_20TH_CENTURY`, `MODERN`. Java `Era` enum matches. Era adjacency (one step apart = "close") is computed by `ordinal()` comparison in `GuessService`.

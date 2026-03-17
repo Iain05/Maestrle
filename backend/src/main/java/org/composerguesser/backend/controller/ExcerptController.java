@@ -25,6 +25,13 @@ public class ExcerptController {
         this.audioBaseUrl = audioBaseUrl;
     }
 
+    /**
+     * Returns today's daily challenge excerpt, resolved using the America/Vancouver timezone.
+     * The audio URL is constructed from the configured {@code audio.base-url} and the excerpt's filename.
+     *
+     * @return 200 with {@link DailyChallengeDto} containing excerptId and audioUrl,
+     *         or 404 if no challenge has been scheduled for today
+     */
     @GetMapping("/daily-challenge")
     public ResponseEntity<DailyChallengeDto> getDailyChallenge() {
         LocalDate today = LocalDate.now(PACIFIC);
