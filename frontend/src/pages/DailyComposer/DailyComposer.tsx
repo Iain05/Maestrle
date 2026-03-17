@@ -33,12 +33,20 @@ const DailyComposer: React.FC = () => {
     useGameState(excerptId, token, addPoints);
 
   const leaderboardLink = (
-    <Link
-      to="/leaderboard"
-      className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
-    >
-      🏆<span className="hidden sm:inline">Leaderboard</span>
-    </Link>
+    <div className="flex items-center gap-2">
+      <Link
+        to="/leaderboard"
+        className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
+      >
+        🏆<span className="hidden sm:inline">Leaderboard</span>
+      </Link>
+      <Link
+        to="/submit"
+        className="hidden sm:flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
+      >
+        🎵 Submit excerpt
+      </Link>
+    </div>
   );
 
   return (
