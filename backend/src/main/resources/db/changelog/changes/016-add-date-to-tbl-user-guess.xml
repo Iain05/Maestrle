@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="016-add-date-nullable" author="composerguesser">
+        <addColumn tableName="tbl_user_guess">
+            <column name="date" type="DATE"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="016-backfill-date" author="composerguesser">
+        <sql>
+            UPDATE tbl_user_guess ug
+            SET date = ed.date
+            FROM tbl_excerpt_day ed
+            WHERE ed.excerpt_id = ug.excerpt_id;
+        </sql>
+        <!-- Any rows with no matching excerpt_day (orphaned test data) get a sentinel date -->
+        <sql>
+            UPDATE tbl_user_guess SET date = '1970-01-01' WHERE date IS NULL;
+        </sql>
+    </changeSet>
+
+    <changeSet id="016-add-date-constraints" author="composerguesser">
+        <addNotNullConstraint tableName="tbl_user_guess" columnName="date" columnDataType="DATE"/>
+        <addForeignKeyConstraint
+                baseTableName="tbl_user_guess"
+                baseColumnNames="date"
+                constraintName="fk_user_guess_excerpt_day"
+                referencedTableName="tbl_excerpt_day"
+                referencedColumnNames="date"
+                onDelete="RESTRICT"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -20,5 +20,6 @@
     <include file="db/changelog/changes/013-add-streak-column.xml"/>
     <include file="db/changelog/changes/014-add-user-role.xml"/>
     <include file="db/changelog/changes/015-add-is-draft-to-tbl-excerpt.xml"/>
+    <include file="db/changelog/changes/016-add-date-to-tbl-user-guess.xml"/>
 
 </databaseChangeLog>

@@ -76,7 +76,9 @@ public class GuessService {
      */
     @Transactional
     public GuessResultDto processGuess(GuessRequestDto request, User user) {
-        Long dailyExcerptId = excerptDayRepository.findById(LocalDate.now(VANCOUVER))
+        LocalDate today = LocalDate.now(VANCOUVER);
+
+        Long dailyExcerptId = excerptDayRepository.findById(today)
                 .map(day -> day.getExcerpt().getExcerptId())
                 .orElseThrow(() -> new IllegalArgumentException("No daily challenge found for today"));
 
@@ -111,14 +113,13 @@ public class GuessService {
 
         int pointsEarned = 0;
         if (user != null) {
-            if (userGuessRepository.existsByUserIdAndExcerptIdAndComposerId(user.getUserId(), excerpt.getExcerptId(), guessed.getComposerId())) {
+            if (userGuessRepository.existsByUserIdAndDateAndComposerId(user.getUserId(), today, guessed.getComposerId())) {
                 throw new IllegalArgumentException("You have already guessed that composer");
             }
-            int guessNumber = userGuessRepository.countByUserIdAndExcerptId(user.getUserId(), excerpt.getExcerptId()) + 1;
-            userGuessRepository.save(new UserGuess(user.getUserId(), excerpt.getExcerptId(), guessed.getComposerId(), guessNumber));
+            int guessNumber = userGuessRepository.countByUserIdAndDate(user.getUserId(), today) + 1;
+            userGuessRepository.save(new UserGuess(user.getUserId(), excerpt.getExcerptId(), guessed.getComposerId(), guessNumber, today));
 
             if (correct) {
-                LocalDate today = LocalDate.now(VANCOUVER);
                 if (!userPointRepository.existsByUserIdAndExcerptDayDate(user.getUserId(), today)) {
                     int points = 11 - guessNumber;
                     userPointRepository.save(new UserPoint(user.getUserId(), today, points, LocalDateTime.now(VANCOUVER)));
@@ -158,14 +159,15 @@ public class GuessService {
     public List<GuessResultDto> getGuessHistory(User user) {
         if (user == null) return List.of();
 
-        return excerptDayRepository.findById(LocalDate.now(VANCOUVER))
+        LocalDate today = LocalDate.now(VANCOUVER);
+        return excerptDayRepository.findById(today)
                 .map(day -> {
                     Excerpt excerpt = day.getExcerpt();
                     Composer target = composerRepository.findById(excerpt.getComposerId()).orElse(null);
                     if (target == null) return List.<GuessResultDto>of();
 
                     return userGuessRepository
-                            .findByUserIdAndExcerptIdOrderByGuessNumber(user.getUserId(), excerpt.getExcerptId())
+                            .findByUserIdAndDateOrderByGuessNumber(user.getUserId(), today)
                             .stream()
                             .map(ug -> {
                                 Composer guessed = composerRepository.findById(ug.getComposerId()).orElse(null);
