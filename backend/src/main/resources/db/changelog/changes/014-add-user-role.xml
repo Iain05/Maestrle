@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="014" author="composerguesser">
+        <sql>CREATE TYPE user_role_type AS ENUM ('USER', 'ADMIN', 'MODERATOR')</sql>
+        <sql>ALTER TABLE tbl_user ADD COLUMN role user_role_type NOT NULL DEFAULT 'USER'</sql>
+    </changeSet>
+
+</databaseChangeLog>

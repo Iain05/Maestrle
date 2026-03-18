@@ -19,6 +19,11 @@ const GuessControls: React.FC<GuessControlsProps> = ({ disabled, composers, onSu
     setSelectedComposer(null);
   }
 
+  function handleClear() {
+    setComposerInput('');
+    setSelectedComposer(null);
+  }
+
   async function handleSubmit() {
     if (disabled) return;
     if (!selectedComposer) {
@@ -43,6 +48,8 @@ const GuessControls: React.FC<GuessControlsProps> = ({ disabled, composers, onSu
         value={composerInput}
         onChange={handleInput}
         onSelect={setSelectedComposer}
+        onClear={handleClear}
+        selected={!!selectedComposer}
         disabled={disabled}
         composers={composers}
       />

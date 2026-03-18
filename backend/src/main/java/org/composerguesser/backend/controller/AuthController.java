@@ -71,6 +71,6 @@ public class AuthController {
     public ResponseEntity<AuthResponseDto> me(@AuthenticationPrincipal User user) {
         if (user == null) return ResponseEntity.status(401).build();
         String freshToken = jwtUtil.generateToken(user.getEmail());
-        return ResponseEntity.ok(new AuthResponseDto(freshToken, user.getDisplayUsername(), user.getEmail(), user.getTotalPoints()));
+        return ResponseEntity.ok(new AuthResponseDto(freshToken, user.getDisplayUsername(), user.getEmail(), user.getTotalPoints(), user.getRole()));
     }
 }

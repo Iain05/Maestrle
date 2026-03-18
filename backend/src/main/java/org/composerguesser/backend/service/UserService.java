@@ -48,7 +48,7 @@ public class UserService {
         user.setCreatedAt(LocalDateTime.now());
         userRepository.save(user);
         String token = jwtUtil.generateToken(user.getEmail());
-        return new AuthResponseDto(token, user.getDisplayUsername(), user.getEmail(), user.getTotalPoints());
+        return new AuthResponseDto(token, user.getDisplayUsername(), user.getEmail(), user.getTotalPoints(), user.getRole());
     }
 
     /**
@@ -68,6 +68,6 @@ public class UserService {
             throw new IllegalArgumentException("Invalid email or password");
         }
         String token = jwtUtil.generateToken(user.getEmail());
-        return new AuthResponseDto(token, user.getDisplayUsername(), user.getEmail(), user.getTotalPoints());
+        return new AuthResponseDto(token, user.getDisplayUsername(), user.getEmail(), user.getTotalPoints(), user.getRole());
     }
 }

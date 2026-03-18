@@ -18,5 +18,6 @@
     <include file="db/changelog/changes/011-alter-tbl-excerpt-add-work-id.xml"/>
     <include file="db/changelog/changes/012-alter-era-enum.xml"/>
     <include file="db/changelog/changes/013-add-streak-column.xml"/>
+    <include file="db/changelog/changes/014-add-user-role.xml"/>
 
 </databaseChangeLog>

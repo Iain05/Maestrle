@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PageLayout from '@src/components/PageLayout';
 import WaveformTrimmer, { fmt, MIN_CLIP_SECS } from '@src/components/WaveformTrimmer';
+import ExcerptMetadataForm from '@src/components/ExcerptMetadataForm';
+import { getComposers } from '@src/api/composer';
+import type { ComposerSummary, ComposerWorkSummary } from '@src/api/composer';
 
 const SubmitExcerpt: React.FC = () => {
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
@@ -11,6 +14,16 @@ const SubmitExcerpt: React.FC = () => {
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  const [composers, setComposers] = useState<ComposerSummary[]>([]);
+  const [selectedComposer, setSelectedComposer] = useState<ComposerSummary | null>(null);
+  const [selectedWork, setSelectedWork] = useState<ComposerWorkSummary | null>(null);
+  const [excerptTitle, setExcerptTitle] = useState('');
+  const [excerptDescription, setExcerptDescription] = useState('');
+
+  useEffect(() => {
+    getComposers().then(setComposers).catch(() => {});
+  }, []);
 
   async function loadFile(file: File) {
     if (!file.type.startsWith('audio/') && !file.name.match(/\.(mp3|wav|flac|ogg|m4a|aac)$/i)) {
@@ -164,6 +177,18 @@ const SubmitExcerpt: React.FC = () => {
                 onEndChange={setEndTime}
               />
             </div>
+
+            {/* Divider */}
+            <div className="border-t border-border" />
+
+            {/* Metadata form */}
+            <ExcerptMetadataForm
+              composers={composers}
+              onComposerChange={setSelectedComposer}
+              onWorkChange={setSelectedWork}
+              onTitleChange={setExcerptTitle}
+              onDescriptionChange={setExcerptDescription}
+            />
           </div>
         )}
       </main>
