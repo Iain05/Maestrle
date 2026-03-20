@@ -67,5 +67,5 @@ export function buildShareText(data: ShareData): string {
     ].join(''),
   ).join('\n');
 
-  return `${header}\n${scoreLine}\n${grid}\n\nhttps://composerguesser.com`;
+  return `${header}\n${scoreLine}\n${grid}\n\nhttps://maestrle.com`;
 }
