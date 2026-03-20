@@ -1,6 +1,8 @@
 package org.composerguesser.backend.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 @Entity
@@ -42,8 +44,10 @@ public class Excerpt {
     @Column(name = "times_used", nullable = false)
     private Integer timesUsed;
 
-    @Column(name = "is_draft", nullable = false)
-    private boolean isDraft = true;
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(nullable = false, columnDefinition = "excerpt_status_type")
+    private ExcerptStatus status = ExcerptStatus.DRAFT;
 
     public Long getExcerptId() { return excerptId; }
     public void setExcerptId(Long excerptId) { this.excerptId = excerptId; }
@@ -77,6 +81,6 @@ public class Excerpt {
 
     public Integer getTimesUsed() { return timesUsed; }
     public void setTimesUsed(Integer timesUsed) { this.timesUsed = timesUsed; }
-    public boolean isDraft() { return isDraft; }
-    public void setDraft(boolean isDraft) { this.isDraft = isDraft; }
+    public ExcerptStatus getStatus() { return status; }
+    public void setStatus(ExcerptStatus status) { this.status = status; }
 }

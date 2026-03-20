@@ -10,9 +10,10 @@ import { getDailyChallenge } from '@src/api/excerpt';
 import { getComposers, type ComposerSummary } from '@src/api/composer';
 import { useAuth } from '@src/context/AuthContext';
 import { useToast } from '@src/context/ToastContext';
+import { ShieldCheck } from 'lucide-react';
 
 const DailyComposer: React.FC = () => {
-  const { token, addPoints } = useAuth();
+  const { token, addPoints, isAdmin } = useAuth();
   const { showToast } = useToast();
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [excerptId, setExcerptId] = useState<number | null>(null);
@@ -46,6 +47,16 @@ const DailyComposer: React.FC = () => {
       >
         🎵 Submit excerpt
       </Link>
+      {isAdmin && (
+        <Link
+          to="/admin"
+          className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
+          title="Admin review"
+        >
+          <ShieldCheck className="w-4 h-4 text-primary" />
+          <span className="hidden sm:inline">Admin review</span>
+        </Link>
+      )}
     </div>
   );
 

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="017" author="composerguesser">
+        <!-- Create the new enum type -->
+        <sql>CREATE TYPE excerpt_status_type AS ENUM ('ACTIVE', 'DRAFT', 'REJECTED', 'DELETED')</sql>
+
+        <!-- Add status column, nullable initially so we can populate it before adding NOT NULL -->
+        <sql>ALTER TABLE tbl_excerpt ADD COLUMN status excerpt_status_type</sql>
+
+        <!-- Migrate existing data: approved excerpts become ACTIVE, drafts stay DRAFT -->
+        <sql>UPDATE tbl_excerpt SET status = 'ACTIVE' WHERE is_draft = false</sql>
+        <sql>UPDATE tbl_excerpt SET status = 'DRAFT'  WHERE is_draft = true</sql>
+
+        <!-- Now enforce NOT NULL -->
+        <sql>ALTER TABLE tbl_excerpt ALTER COLUMN status SET NOT NULL</sql>
+
+        <!-- Drop the old column -->
+        <dropColumn tableName="tbl_excerpt" columnName="is_draft"/>
+    </changeSet>
+
+</databaseChangeLog>

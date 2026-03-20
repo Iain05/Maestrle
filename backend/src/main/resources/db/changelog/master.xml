@@ -21,5 +21,6 @@
     <include file="db/changelog/changes/014-add-user-role.xml"/>
     <include file="db/changelog/changes/015-add-is-draft-to-tbl-excerpt.xml"/>
     <include file="db/changelog/changes/016-add-date-to-tbl-user-guess.xml"/>
+    <include file="db/changelog/changes/017-replace-is-draft-with-status.xml"/>
 
 </databaseChangeLog>

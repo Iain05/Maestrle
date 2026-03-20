@@ -1,6 +1,7 @@
 package org.composerguesser.backend.service;
 
 import org.composerguesser.backend.model.Excerpt;
+import org.composerguesser.backend.model.ExcerptStatus;
 import org.composerguesser.backend.model.User;
 import org.composerguesser.backend.repository.ComposerRepository;
 import org.composerguesser.backend.repository.ExcerptRepository;
@@ -101,7 +102,7 @@ public class ExcerptSubmitService {
             excerpt.setFilename(tempFilename);
             excerpt.setCompositionYear(compositionYear);
             excerpt.setDescription(description != null && !description.isBlank() ? description.trim() : null);
-            excerpt.setDraft(true);
+            excerpt.setStatus(ExcerptStatus.DRAFT);
             excerpt.setTimesUsed(0);
             excerpt.setDateUploaded(LocalDateTime.now());
             saved = excerptRepository.save(excerpt);

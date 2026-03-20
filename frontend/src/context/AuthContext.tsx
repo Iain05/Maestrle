@@ -5,11 +5,13 @@ interface AuthUser {
   username: string;
   email: string;
   totalPoints: number;
+  role: string;
 }
 
 interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -43,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!data) return;
-        const updated: AuthUser = { username: data.username, email: data.email, totalPoints: data.totalPoints };
+        const updated: AuthUser = { username: data.username, email: data.email, totalPoints: data.totalPoints, role: data.role ?? 'USER' };
         localStorage.setItem(USER_KEY, JSON.stringify(updated));
         setUser(updated);
         if (data.token) {
@@ -55,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   function persist(res: AuthResponse) {
-    const u: AuthUser = { username: res.username, email: res.email, totalPoints: res.totalPoints };
+    const u: AuthUser = { username: res.username, email: res.email, totalPoints: res.totalPoints, role: res.role ?? 'USER' };
     localStorage.setItem(TOKEN_KEY, res.token);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     setToken(res.token);
@@ -83,8 +85,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(updated);
   }
 
+  const isAdmin = user?.role === 'ADMIN';
+
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, addPoints }}>
+    <AuthContext.Provider value={{ user, token, isAdmin, login, register, logout, addPoints }}>
       {children}
     </AuthContext.Provider>
   );

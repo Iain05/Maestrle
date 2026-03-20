@@ -3,6 +3,7 @@ export interface AuthResponse {
   username: string;
   email: string;
   totalPoints: number;
+  role: string;
 }
 
 export async function register(username: string, email: string, password: string): Promise<AuthResponse> {

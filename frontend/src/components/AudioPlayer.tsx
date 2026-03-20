@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Music, Play, Pause } from 'lucide-react';
 
 interface AudioPlayerProps {
@@ -18,6 +18,26 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressBarRef = useRef<HTMLDivElement | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  function startRaf() {
+    function tick() {
+      if (audioRef.current) {
+        setCurrentTime(audioRef.current.currentTime);
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+  }
+
+  function stopRaf() {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }
+
+  useEffect(() => stopRaf, []);
 
   function seek(clientX: number) {
     const audio = audioRef.current;
@@ -45,15 +65,18 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
 
     if (isPlaying) {
       audio.pause();
+      stopRaf();
       setIsPlaying(false);
     } else if (isInPlaySession) {
       audio.play();
+      startRaf();
       setIsPlaying(true);
     } else {
       audio.currentTime = 0;
       setCurrentTime(0);
       setIsInPlaySession(true);
       audio.play();
+      startRaf();
       setIsPlaying(true);
     }
   }
@@ -65,9 +88,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
       <audio
         ref={audioRef}
         src={audioUrl ?? undefined}
-        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
         onDurationChange={(e) => setDuration(e.currentTarget.duration)}
-        onEnded={() => { setIsPlaying(false); setIsInPlaySession(false); }}
+        onEnded={() => { stopRaf(); setIsPlaying(false); setIsInPlaySession(false); }}
       />
 
       <div className="flex items-center gap-2 text-primary mb-4">
@@ -95,7 +117,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
           onPointerMove={handlePointerMove}
         >
           <div
-            className="h-full bg-primary transition-all duration-75"
+            className="h-full bg-primary"
             style={{ width: `${progress}%` }}
           />
         </div>

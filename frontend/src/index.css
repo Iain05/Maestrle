@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Elsie:wght@400;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
 @import "tailwindcss";
 
+/* Use .dark class for dark mode instead of the OS media query,
+   so the in-app theme toggle controls Tailwind's dark: variant */
+@variant dark (&:where(.dark, .dark *));
+
 /* ─── Design tokens ────────────────────────────────────────────────────────
    Change colours here to retheme the entire application.
    These become CSS custom properties on :root and Tailwind utility classes.
