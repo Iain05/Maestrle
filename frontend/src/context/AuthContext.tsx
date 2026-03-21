@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { login as apiLogin, register as apiRegister, type AuthResponse } from '@src/api/auth';
+import { replayPendingGuesses, clearPendingGuesses } from '@src/utils/replayPendingGuesses';
 
 interface AuthUser {
   username: string;
@@ -57,25 +58,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {});
   }, []);
 
-  function persist(res: AuthResponse) {
+  async function persist(res: AuthResponse) {
     const u: AuthUser = { username: res.username, email: res.email, totalPoints: res.totalPoints, role: res.role ?? 'USER', streak: res.streak ?? 0 };
     localStorage.setItem(TOKEN_KEY, res.token);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     setToken(res.token);
     setUser(u);
+    await replayPendingGuesses(res.token);
+    window.location.reload();
   }
 
   async function login(email: string, password: string) {
-    persist(await apiLogin(email, password));
+    await persist(await apiLogin(email, password));
   }
 
   async function register(username: string, email: string, password: string) {
-    persist(await apiRegister(username, email, password));
+    await persist(await apiRegister(username, email, password));
   }
 
   function logout() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    clearPendingGuesses();
     window.location.reload();
   }
 

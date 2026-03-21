@@ -38,8 +38,8 @@ In dev, only `db` and `audio-server` run in Docker. Frontend and backend run loc
 
 ### Backend package structure (`backend/src/main/java/org/composerguesser/backend/`)
 - `controller/` — REST controllers (`/api` prefix set in `application.properties`)
-- `service/` — Business logic (`GuessService`, `UserService`, `DailyChallengeScheduler`)
-- `model/` — JPA entities (`Composer`, `ComposerWork`, `Excerpt`, `ExcerptDay`, `User`, `UserGuess`, `UserPoint`, `Era` enum)
+- `service/` — Business logic (`GuessService`, `UserService`, `ExcerptSubmitService`, `AdminService`, `DailyChallengeScheduler`)
+- `model/` — JPA entities (`Composer`, `ComposerWork`, `Excerpt`, `ExcerptDay`, `User`, `UserGuess`, `UserPoint`); enums (`Era`, `ExcerptStatus`, `Role`)
 - `repository/` — Spring Data JPA repositories
 - `dto/` — Request/response DTOs
 - `security/` — JWT auth (`JwtUtil`, `JwtAuthFilter`, `SecurityConfig`)
@@ -62,25 +62,30 @@ In dev, only `db` and `audio-server` run in Docker. Frontend and backend run loc
 | POST | `/auth/login` | — | Authenticate; returns JWT + profile |
 | GET | `/auth/me` | Required | Current user's profile |
 | GET | `/composers` | — | All composers (id + name) for the guess dropdown |
-| GET | `/composers/{id}` | — | Single composer details |
-| GET | `/excerpt/daily-challenge` | — | Today's challenge: `{ excerptId, audioUrl }` |
+| GET | `/composers/{id}` | — | Single composer full details |
+| GET | `/composers/{id}/works` | — | All works for a composer (id + title), sorted by title; used to populate the work dropdown on the submit form |
+| GET | `/excerpt/daily-challenge` | — | Today's challenge: `{ excerptId, audioUrl, challengeNumber, date }` |
+| POST | `/excerpt/submit` | Required | Upload a trimmed WAV + metadata as `multipart/form-data`; creates a `DRAFT` excerpt |
 | GET | `/guess` | Optional | Authenticated user's guess history for today (empty array if anon) |
-| POST | `/guess` | Optional | Submit a guess; returns hint feedback and points earned on win |
+| POST | `/guess` | Optional | Submit a guess; returns hint feedback and `pointsEarned`/`newStreak` on win |
 | GET | `/leaderboard/daily` | — | Today's leaderboard, paginated (`?page=0&size=20`) |
 | GET | `/leaderboard/all-time` | — | All-time leaderboard by total points, paginated |
 | GET | `/leaderboard/my-rank` | Required | Caller's all-time rank, daily rank, points, and streak |
+| GET | `/admin/excerpts` | ADMIN | Paginated excerpts filtered by `?status=DRAFT` (default), `ACTIVE`, `REJECTED`, or `DELETED`; optionally filtered by `?composerId=` |
+| PATCH | `/admin/excerpts/{id}/status` | ADMIN | Flip an excerpt's status (reject, unreject, delete, restore) |
+| PATCH | `/admin/excerpts/{id}/approve` | ADMIN | Update excerpt metadata and set status to `ACTIVE` |
 | GET | `/health` | — | `{ "status": "UP" }` — used by Docker health checks |
 
 ### Database schema
 
 | Table | Key columns | Notes |
 |-------|-------------|-------|
-| `tbl_user` | `user_id`, `username`, `email`, `password_hash`, `total_points`, `current_streak`, `created_at` | `email` is the JWT subject |
+| `tbl_user` | `user_id`, `username`, `email`, `password_hash`, `total_points`, `current_streak`, `created_at`, `role` | `email` is the JWT subject; `role` is a PostgreSQL enum (`USER`, `MODERATOR`, `ADMIN`) |
 | `tbl_composer` | `composer_id`, `complete_name`, `last_name`, `birth_year`, `death_year`, `era`, `nationality` | `era` is a PostgreSQL enum |
 | `tbl_composer_work` | `work_id`, `composer_id`, `title`, `genre`, `year` | Optional metadata |
-| `tbl_excerpt` | `excerpt_id`, `composer_id`, `uploaded_by_user_id`, `name`, `filename`, `times_used` | `filename` maps to a file in `./audio-files/`; `times_used` drives round-robin daily selection |
-| `tbl_excerpt_day` | `date` (PK), `excerpt_id` | One row per calendar day; date is the PK |
-| `tbl_user_guess` | `guess_id`, `user_id`, `excerpt_id`, `composer_id`, `guess_number` | Max 5 guesses per user per excerpt |
+| `tbl_excerpt` | `excerpt_id`, `composer_id`, `uploaded_by_user_id`, `name`, `filename`, `times_used`, `status`, `composition_year`, `work_id`, `description`, `date_uploaded` | `filename` maps to a file in `./audio-files/`; `times_used` drives round-robin daily selection; `status` is a PostgreSQL enum (`DRAFT`, `ACTIVE`, `REJECTED`, `DELETED`) — only `ACTIVE` excerpts are eligible for the daily challenge |
+| `tbl_excerpt_day` | `date` (PK), `excerpt_id`, `challenge_number` | One row per calendar day; `challenge_number` is auto-assigned via a sequence and is unique |
+| `tbl_user_guess` | `guess_id`, `user_id`, `excerpt_id`, `composer_id`, `guess_number`, `date` | Max 5 guesses per user per day; `date` is used to scope queries to today |
 | `tbl_user_point` | `point_id`, `user_id`, `excerpt_day_date`, `points`, `earned_at` | Unique per (user, date); `points = 11 - guess_number` (range 6–10) |
 
 ### Frontend structure (`frontend/src/`)
@@ -90,9 +95,10 @@ In dev, only `db` and `audio-server` run in Docker. Frontend and backend run loc
 - `pages/SubmitExcerpt/` — Desktop-only excerpt submission page with drag-and-drop audio upload and a waveform trimmer.
 - `hooks/useGameState.ts` — Manages `guesses: GuessResult[]` state. `submitGuess(composerId)` calls `POST /api/guess` and appends the result. `isGameOver` and `won` are derived from guesses.
 - `components/` — `AudioPlayer`, `ComposerSearch`, `GuessControls`, `GuessGrid`, `HintCard`, `GameStatus`, `WaveformTrimmer`, `PageLayout`
-- `context/` — `AuthContext` (JWT token, user profile, `addPoints`), `ToastContext` (error toasts)
+- `context/` — `AuthContext` (JWT token, user profile, `addPoints`, anonymous guess replay on login), `ToastContext` (error toasts)
+- `utils/replayPendingGuesses.ts` — Stores anonymous guesses to `localStorage` and replays them against the API on login/register
 - `data/gameData.ts` — Only `MAX_PLAYS` and `MAX_GUESSES` constants remain
-- `types/game.ts` — Only `HintStatus = 'correct' | 'close' | 'wrong'`
+- `types/game.ts` — Only `HintStatus = 'CORRECT' | 'CLOSE' | 'WRONG'`
 
 **Path alias:** `@src/*` → `src/*`
 
@@ -104,5 +110,7 @@ In dev, only `db` and `audio-server` run in Docker. Frontend and backend run loc
 3. User selects a composer → `ComposerSearch` calls `onSelect(ComposerSummary)` to give `GuessControls` the `composerId`
 4. `POST /api/guess` with `{ excerptId, composerId }` → `GuessResult` with hint fields (`composerHint`, `yearHint`, `eraHint`, `nationalityHint`) and always includes `targetComposerName` + `pieceTitle` for the end screen
 
-### Era enum
-PostgreSQL `era_type`: `BAROQUE`, `CLASSICAL`, `EARLY_ROMANTIC`, `ROMANTIC`, `LATE_ROMANTIC`, `_20TH_CENTURY`, `MODERN`. Java `Era` enum matches. Era adjacency (one step apart = "close") is computed by `ordinal()` comparison in `GuessService`.
+### Enums
+- **`era_type`** (PostgreSQL): `BAROQUE`, `CLASSICAL`, `EARLY_ROMANTIC`, `ROMANTIC`, `LATE_ROMANTIC`, `_20TH_CENTURY`, `MODERN`. Java `Era` enum matches. Era adjacency (one step apart = `CLOSE`) is computed by `ordinal()` comparison in `GuessService`.
+- **`excerpt_status_type`** (PostgreSQL): `DRAFT`, `ACTIVE`, `REJECTED`, `DELETED`. Java `ExcerptStatus` enum matches. Only `ACTIVE` excerpts are scheduled for the daily challenge.
+- **`user_role_type`** (PostgreSQL): `USER`, `MODERATOR`, `ADMIN`. Java `Role` enum matches. Admin endpoints are restricted to `ADMIN` role via `SecurityConfig`.

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { Copy, Check } from 'lucide-react';
 import { buildShareText, copyToClipboard, type ShareData } from '@src/utils/shareScore';
+import AuthModal from './AuthModal';
 
 interface GameStatusProps {
   won: boolean;
@@ -9,11 +10,13 @@ interface GameStatusProps {
   pieceTitle: string;
   onClose: () => void;
   shareData: ShareData;
+  isLoggedIn: boolean;
 }
 
-const GameStatus: React.FC<GameStatusProps> = ({ won, composerName, pieceTitle, onClose, shareData }) => {
+const GameStatus: React.FC<GameStatusProps> = ({ won, composerName, pieceTitle, onClose, shareData, isLoggedIn }) => {
   const [closing, setClosing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
 
   function handleClose() {
     setClosing(true);
@@ -41,6 +44,7 @@ const GameStatus: React.FC<GameStatusProps> = ({ won, composerName, pieceTitle, 
   }, []);
 
   return (
+    <>
     <div
       className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
       onMouseDown={(e) => { if (e.target === e.currentTarget) handleClose(); }}
@@ -74,6 +78,28 @@ const GameStatus: React.FC<GameStatusProps> = ({ won, composerName, pieceTitle, 
           {copied ? 'Copied!' : 'Share your score'}
         </button>
 
+        {!isLoggedIn && (
+          <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-xl text-center">
+            <p className="text-sm text-ink-muted mb-3">
+              Sign in to save your score, track your streak, and appear on the leaderboard.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAuthMode('register')}
+                className="flex-1 py-2 bg-primary text-primary-text text-sm font-semibold rounded-xl hover:bg-primary-hover transition-colors"
+              >
+                Create account
+              </button>
+              <button
+                onClick={() => setAuthMode('login')}
+                className="flex-1 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl hover:border-border-hover transition-colors"
+              >
+                Sign in
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* This button is commented out because i want to add it back but as a 'view daily leaderboard' button or something */}
         {/* <button */}
         {/*   onClick={onPlayAgain} */}
@@ -83,6 +109,9 @@ const GameStatus: React.FC<GameStatusProps> = ({ won, composerName, pieceTitle, 
         {/* </button> */}
       </div>
     </div>
+
+    {authMode && <AuthModal initialMode={authMode} onClose={() => setAuthMode(null)} />}
+    </>
   );
 };
 

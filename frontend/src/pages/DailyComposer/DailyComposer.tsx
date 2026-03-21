@@ -98,6 +98,7 @@ const DailyComposer: React.FC = () => {
             pieceTitle={lastGuess.pieceTitle}
             onClose={clearJustFinished}
             shareData={shareData}
+            isLoggedIn={!!user}
           />
         )}
       </main>

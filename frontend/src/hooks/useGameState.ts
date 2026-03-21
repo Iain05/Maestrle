@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { MAX_GUESSES } from '@src/data/gameData';
 import { submitGuess as submitGuessApi, getMyGuesses, type GuessResult } from '@src/api/guess';
+import { storePendingGuess } from '@src/utils/replayPendingGuesses';
 
 const HISTORY_STAGGER_MS = 500;
 
@@ -55,6 +56,7 @@ export function useGameState(excerptId: number | null, token: string | null, onP
 
     try {
       const result = await submitGuessApi(excerptId, composerId, token);
+      if (!token) storePendingGuess(excerptId, composerId);
       guessedIdsRef.current.add(composerId);
       setGuesses((prev) => {
         const next = [...prev, result];
