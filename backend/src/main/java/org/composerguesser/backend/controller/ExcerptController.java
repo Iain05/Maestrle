@@ -4,6 +4,7 @@ import org.composerguesser.backend.dto.DailyChallengeDto;
 import org.composerguesser.backend.model.ExcerptDay;
 import org.composerguesser.backend.model.User;
 import org.composerguesser.backend.repository.ExcerptDayRepository;
+import org.composerguesser.backend.repository.UserRepository;
 import org.composerguesser.backend.service.ExcerptSubmitService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -24,13 +25,16 @@ public class ExcerptController {
 
     private final ExcerptDayRepository excerptDayRepository;
     private final ExcerptSubmitService excerptSubmitService;
+    private final UserRepository userRepository;
     private final String audioBaseUrl;
 
     public ExcerptController(ExcerptDayRepository excerptDayRepository,
                              ExcerptSubmitService excerptSubmitService,
+                             UserRepository userRepository,
                              @Value("${audio.base-url}") String audioBaseUrl) {
         this.excerptDayRepository = excerptDayRepository;
         this.excerptSubmitService = excerptSubmitService;
+        this.userRepository = userRepository;
         this.audioBaseUrl = audioBaseUrl;
     }
 
@@ -42,15 +46,24 @@ public class ExcerptController {
      *         or 404 if no challenge has been scheduled for today
      */
     @GetMapping("/daily-challenge")
-    public ResponseEntity<DailyChallengeDto> getDailyChallenge() {
+    public ResponseEntity<DailyChallengeDto> getDailyChallenge(@AuthenticationPrincipal User user) {
         LocalDate today = LocalDate.now(PACIFIC);
         return excerptDayRepository.findById(today)
-                .map(day -> ResponseEntity.ok(new DailyChallengeDto(
-                        day.getExcerpt().getExcerptId(),
-                        audioBaseUrl + "/" + day.getExcerpt().getFilename(),
-                        day.getChallengeNumber(),
-                        today.toString()
-                )))
+                .map(day -> {
+                    boolean submittedByCurrentUser = user != null &&
+                            user.getUserId().equals(day.getExcerpt().getUploadedByUserId());
+                    String uploaderUsername = userRepository.findById(day.getExcerpt().getUploadedByUserId())
+                            .map(User::getDisplayUsername)
+                            .orElse("Unknown");
+                    return ResponseEntity.ok(new DailyChallengeDto(
+                            day.getExcerpt().getExcerptId(),
+                            audioBaseUrl + "/" + day.getExcerpt().getFilename(),
+                            day.getChallengeNumber(),
+                            today.toString(),
+                            submittedByCurrentUser,
+                            uploaderUsername
+                    ));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 

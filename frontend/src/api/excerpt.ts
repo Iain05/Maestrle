@@ -3,10 +3,14 @@ export interface DailyChallenge {
   audioUrl: string;
   challengeNumber: number | null;
   date: string | null;
+  submittedByCurrentUser: boolean;
+  uploaderUsername: string;
 }
 
-export async function getDailyChallenge(): Promise<DailyChallenge> {
-  const res = await fetch('/api/excerpt/daily-challenge');
+export async function getDailyChallenge(token?: string | null): Promise<DailyChallenge> {
+  const res = await fetch('/api/excerpt/daily-challenge', {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   if (!res.ok) throw new Error('No daily challenge found');
   return res.json();
 }

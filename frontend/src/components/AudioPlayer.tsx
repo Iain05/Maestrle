@@ -3,6 +3,7 @@ import { Music, Play, Pause } from 'lucide-react';
 
 interface AudioPlayerProps {
   audioUrl: string | null;
+  notice?: string;
 }
 
 function formatTime(seconds: number): string {
@@ -11,7 +12,7 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl, notice }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isInPlaySession, setIsInPlaySession] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -84,7 +85,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="bg-surface-warm p-8 rounded-2xl shadow-sm border border-border">
+    <div className="bg-surface-warm p-8 pt-6 pb-6 rounded-2xl shadow-sm border border-border">
       <audio
         ref={audioRef}
         src={audioUrl ?? undefined}
@@ -127,6 +128,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }) => {
           <span>{formatTime(duration)}</span>
         </div>
       </div>
+
+      {notice && (
+        <p className="text-xs text-ink-muted italic -mt-2 text-center">{notice}</p>
+      )}
     </div>
   );
 };

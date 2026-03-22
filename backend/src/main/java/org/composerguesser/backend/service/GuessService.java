@@ -124,7 +124,8 @@ public class GuessService {
             userGuessRepository.save(new UserGuess(user.getUserId(), excerpt.getExcerptId(), guessed.getComposerId(), guessNumber, today));
 
             if (correct) {
-                if (!userPointRepository.existsByUserIdAndExcerptDayDate(user.getUserId(), today)) {
+                boolean ownSubmission = excerpt.getUploadedByUserId().equals(user.getUserId());
+                if (!ownSubmission && !userPointRepository.existsByUserIdAndExcerptDayDate(user.getUserId(), today)) {
                     int points = 11 - guessNumber;
                     userPointRepository.save(new UserPoint(user.getUserId(), today, points, LocalDateTime.now(VANCOUVER)));
                     user.setTotalPoints(user.getTotalPoints() + points);

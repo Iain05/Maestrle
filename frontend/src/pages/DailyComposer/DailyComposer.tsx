@@ -21,17 +21,23 @@ const DailyComposer: React.FC = () => {
   const [composers, setComposers] = useState<ComposerSummary[]>([]);
   const [challengeNumber, setChallengeNumber] = useState<number | null>(null);
   const [challengeDate, setChallengeDate] = useState<string | null>(null);
+  const [ownSubmission, setOwnSubmission] = useState(false);
+  const [uploaderUsername, setUploaderUsername] = useState<string | null>(null);
 
   useEffect(() => {
-    getDailyChallenge()
+    getDailyChallenge(token)
       .then((data) => {
         setAudioUrl(data.audioUrl);
         setExcerptId(data.excerptId);
         setChallengeNumber(data.challengeNumber);
         setChallengeDate(data.date);
+        setOwnSubmission(data.submittedByCurrentUser);
+        setUploaderUsername(data.uploaderUsername);
       })
       .catch(console.error);
+  }, [token]);
 
+  useEffect(() => {
     getComposers().then(setComposers).catch(console.error);
   }, []);
 
@@ -80,7 +86,15 @@ const DailyComposer: React.FC = () => {
       subtitle="Identify who composed this musical excerpt!"
     >
       <main className="max-w-xl w-full flex flex-col gap-6">
-        <AudioPlayer key={gameKey} audioUrl={audioUrl} />
+        <AudioPlayer
+          key={gameKey}
+          audioUrl={audioUrl}
+          notice={uploaderUsername
+            ? ownSubmission
+              ? `Submitted by you — correct guesses won't earn points.`
+              : `Submitted by ${uploaderUsername}`
+            : undefined}
+        />
 
         <GuessControls
           disabled={isGameOver || isLoading}
