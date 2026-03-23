@@ -1,0 +1,10 @@
+# Dev overrides: exposes db and audio-server ports to the host so the locally-running
+# backend and Vite dev server can reach them. Not used in production.
+services:
+  db:
+    ports:
+      - "5432:5432"
+
+  audio-server:
+    ports:
+      - "8081:80"

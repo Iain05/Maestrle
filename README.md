@@ -7,10 +7,10 @@ A daily classical music guessing game (Wordle-style). Listen to an audio excerpt
 ### 1. Start infrastructure
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
-This starts PostgreSQL (port 5432) and the audio file server (port 8081).
+This starts PostgreSQL (port 5432) and the audio file server (port 8081), with their ports exposed to the host so the locally-running backend and Vite dev server can reach them.
 
 ### 2. Start the backend
 
@@ -73,4 +73,4 @@ Composers where MusicBrainz returns no country are imported with nationality `XX
 docker compose --profile prod up -d
 ```
 
-Starts all four services: frontend (nginx, port 80), backend, db, and audio-server.
+Starts all four services: frontend (nginx, port 80), backend, db, and audio-server. Internal services communicate over the Docker network only — `db`, `audio-server`, and `backend` are not exposed to the host.

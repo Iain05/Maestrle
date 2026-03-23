@@ -20,8 +20,8 @@ npm run lint            # ESLint
 
 ### Infrastructure
 ```bash
-docker compose up -d                        # Start db + audio-server (dev)
-docker compose --profile prod up -d         # Start all four services (prod)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # Start db + audio-server (dev, ports exposed to host)
+docker compose --profile prod up -d                                    # Start all four services (prod, no extra ports exposed)
 ```
 
 ## Architecture
