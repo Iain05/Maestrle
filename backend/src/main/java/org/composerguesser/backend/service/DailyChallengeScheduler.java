@@ -27,25 +27,28 @@ public class DailyChallengeScheduler {
     private final UserRepository userRepository;
 
     public DailyChallengeScheduler(ExcerptDayRepository excerptDayRepository,
-                                   ExcerptRepository excerptRepository,
-                                   UserRepository userRepository) {
+            ExcerptRepository excerptRepository,
+            UserRepository userRepository) {
         this.excerptDayRepository = excerptDayRepository;
         this.excerptRepository = excerptRepository;
         this.userRepository = userRepository;
     }
 
     /**
-     * Scheduled nightly at 23:59 (America/Vancouver). Ensures tomorrow's daily challenge
-     * is assigned before the day rolls over. No-ops if tomorrow already has an entry.
+     * Scheduled nightly at 23:59 (America/Vancouver). Ensures tomorrow's and the
+     * following days daily challenges are assigned before the day rolls over.
+     * No-ops if tomorrow already has an entry.
      */
     @Scheduled(cron = "0 59 23 * * *", zone = "America/Vancouver")
     @Transactional
-    public void scheduleTomorrowsChallenge() {
+    public void scheduleUpcomingChallenges() {
         ensureChallengeExists(LocalDate.now(VANCOUVER).plusDays(1));
+        ensureChallengeExists(LocalDate.now(VANCOUVER).plusDays(2));
     }
 
     /**
-     * Scheduled nightly at 00:01 (America/Vancouver). Resets {@code current_streak} to 0
+     * Scheduled nightly at 00:01 (America/Vancouver). Resets {@code current_streak}
+     * to 0
      * for any user who has a streak but did not earn points yesterday.
      */
     @Scheduled(cron = "0 1 0 * * *", zone = "America/Vancouver")
@@ -55,8 +58,10 @@ public class DailyChallengeScheduler {
     }
 
     /**
-     * Runs once on application startup to catch up on any maintenance missed while the backend
-     * was down. Ensures both today and tomorrow have a daily challenge assigned, then runs
+     * Runs once on application startup to catch up on any maintenance missed while
+     * the backend
+     * was down. Ensures both today and tomorrow have a daily challenge assigned,
+     * then runs
      * streak expiry in case the midnight job was skipped.
      */
     @EventListener(ApplicationReadyEvent.class)
@@ -70,7 +75,8 @@ public class DailyChallengeScheduler {
 
     /**
      * Assigns a daily challenge for {@code date} if one does not already exist.
-     * Selects the excerpt with the lowest {@code times_used} count (random tiebreak)
+     * Selects the excerpt with the lowest {@code times_used} count (random
+     * tiebreak)
      * and increments its counter to maintain round-robin fairness across the pool.
      */
     private void ensureChallengeExists(LocalDate date) {
@@ -99,7 +105,8 @@ public class DailyChallengeScheduler {
 
     /**
      * Resets {@code current_streak} to 0 for every user who has a streak but no
-     * {@code tbl_user_point} entry for yesterday. Logs how many users were affected.
+     * {@code tbl_user_point} entry for yesterday. Logs how many users were
+     * affected.
      */
     private void resetExpiredStreaks() {
         LocalDate yesterday = LocalDate.now(VANCOUVER).minusDays(1);
