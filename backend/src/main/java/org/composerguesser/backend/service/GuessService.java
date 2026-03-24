@@ -9,6 +9,8 @@ import org.composerguesser.backend.repository.ExcerptRepository;
 import org.composerguesser.backend.repository.UserGuessRepository;
 import org.composerguesser.backend.repository.UserPointRepository;
 import org.composerguesser.backend.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 @Service
 public class GuessService {
 
+    private static final Logger log = LoggerFactory.getLogger(GuessService.class);
     private static final ZoneId VANCOUVER = ZoneId.of("America/Vancouver");
 
     private final ExcerptRepository excerptRepository;
@@ -96,6 +99,11 @@ public class GuessService {
                 .orElseThrow(() -> new IllegalArgumentException("Guessed composer not found"));
 
         boolean correct = guessed.getComposerId().equals(target.getComposerId());
+
+        log.info("Guess submitted: user={} guessed=\"{}\" correct={}",
+                user != null ? user.getDisplayUsername() : "anonymous",
+                guessed.getCompleteName(),
+                correct);
 
         String composerHint = correct ? "CORRECT" : "WRONG";
 

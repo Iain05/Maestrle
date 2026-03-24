@@ -136,6 +136,17 @@ public class AdminService {
         }
         LocalDate tomorrow = LocalDate.now(ZoneId.of("America/Vancouver")).plusDays(1);
         ExcerptDay day = excerptDayRepository.findById(tomorrow).orElse(new ExcerptDay());
+
+        // Decrement the displaced excerpt's counter (if there was one and it's different)
+        if (day.getExcerpt() != null && !day.getExcerpt().getExcerptId().equals(excerptId)) {
+            Excerpt displaced = day.getExcerpt();
+            displaced.setTimesUsed(Math.max(0, displaced.getTimesUsed() - 1));
+            excerptRepository.save(displaced);
+        }
+
+        excerpt.setTimesUsed(excerpt.getTimesUsed() + 1);
+        excerptRepository.save(excerpt);
+
         day.setDate(tomorrow);
         day.setExcerpt(excerpt);
         excerptDayRepository.save(day);
