@@ -76,6 +76,17 @@ export async function getDailyChallenges(token: string): Promise<DailyChallenges
   return res.json();
 }
 
+export async function scheduleTomorrow(id: number, token: string): Promise<void> {
+  const res = await fetch(`/api/admin/excerpts/${id}/schedule-tomorrow`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? 'Failed to schedule');
+  }
+}
+
 export async function updateExcerptStatus(id: number, status: ExcerptStatus, token: string): Promise<void> {
   const res = await fetch(`/api/admin/excerpts/${id}/status`, {
     method: 'PATCH',

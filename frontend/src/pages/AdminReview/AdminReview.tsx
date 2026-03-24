@@ -4,7 +4,7 @@ import PageLayout from '@src/components/PageLayout';
 import SearchDropdown from '@src/components/SearchDropdown';
 import { useAuth } from '@src/context/AuthContext';
 import {
-  getExcerpts, approveExcerpt, updateExcerptStatus, getDailyChallenges,
+  getExcerpts, approveExcerpt, updateExcerptStatus, getDailyChallenges, scheduleTomorrow,
   type DraftExcerpt, type ExcerptsPage, type ExcerptStatus, type SortOption, type DailyChallengesResponse,
 } from '@src/api/admin';
 import { getComposers, getComposerWorks, type ComposerSummary, type ComposerWorkSummary } from '@src/api/composer';
@@ -121,10 +121,12 @@ interface DraftCardProps {
   excerpt: DraftExcerpt;
   composers: ComposerSummary[];
   token: string;
+  tomorrowExcerptId: number | null;
   onStatusChanged: () => void;
+  onScheduled: () => void;
 }
 
-const DraftCard: React.FC<DraftCardProps> = ({ excerpt, composers, token, onStatusChanged }) => {
+const DraftCard: React.FC<DraftCardProps> = ({ excerpt, composers, token, tomorrowExcerptId, onStatusChanged, onScheduled }) => {
   const [expanded, setExpanded] = useState(false);
 
   const [composerQuery, setComposerQuery] = useState(excerpt.composerName);
@@ -141,6 +143,7 @@ const DraftCard: React.FC<DraftCardProps> = ({ excerpt, composers, token, onStat
 
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -405,12 +408,32 @@ const DraftCard: React.FC<DraftCardProps> = ({ excerpt, composers, token, onStat
               )}
 
               {excerpt.status === 'ACTIVE' && (
-                <button
-                  onClick={() => setPendingAction('delete')}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all shadow-sm active:scale-95"
-                >
-                  <Trash2 className="w-4 h-4" /> Delete
-                </button>
+                <>
+                  <button
+                    onClick={async () => {
+                      setScheduleLoading(true);
+                      setError('');
+                      try {
+                        await scheduleTomorrow(excerpt.excerptId, token);
+                        onScheduled();
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : 'Failed to schedule');
+                      } finally {
+                        setScheduleLoading(false);
+                      }
+                    }}
+                    disabled={scheduleLoading || tomorrowExcerptId === excerpt.excerptId}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-white font-semibold rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+                  >
+                    {scheduleLoading ? 'Scheduling…' : tomorrowExcerptId === excerpt.excerptId ? 'Scheduled tomorrow' : 'Schedule tomorrow'}
+                  </button>
+                  <button
+                    onClick={() => setPendingAction('delete')}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all shadow-sm active:scale-95"
+                  >
+                    <Trash2 className="w-4 h-4" /> Delete
+                  </button>
+                </>
               )}
 
               {excerpt.status === 'DELETED' && (
@@ -520,9 +543,12 @@ const AdminReview: React.FC = () => {
     loadPage([...selectedStatuses], filterComposer?.composerId ?? null, newSort, 0);
   }
 
-  // Refetch the current page after any status change
   function handleStatusChanged() {
     loadPage([...selectedStatuses], filterComposer?.composerId ?? null, sort, currentPage);
+  }
+
+  function handleScheduled() {
+    if (token) getDailyChallenges(token).then(setDailyChallenges).catch(() => {});
   }
 
   function goToPage(index: number) {
@@ -683,7 +709,9 @@ const AdminReview: React.FC = () => {
             excerpt={excerpt}
             composers={composers}
             token={token!}
+            tomorrowExcerptId={dailyChallenges?.tomorrow?.excerptId ?? null}
             onStatusChanged={handleStatusChanged}
+            onScheduled={handleScheduled}
           />
         ))}
 

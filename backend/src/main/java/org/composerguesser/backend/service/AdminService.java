@@ -127,6 +127,20 @@ public class AdminService {
         excerptRepository.save(excerpt);
     }
 
+    @Transactional
+    public void scheduleTomorrow(Long excerptId) {
+        Excerpt excerpt = excerptRepository.findById(excerptId)
+                .orElseThrow(() -> new IllegalArgumentException("Excerpt not found: " + excerptId));
+        if (excerpt.getStatus() != ExcerptStatus.ACTIVE) {
+            throw new IllegalArgumentException("Only active excerpts can be scheduled");
+        }
+        LocalDate tomorrow = LocalDate.now(ZoneId.of("America/Vancouver")).plusDays(1);
+        ExcerptDay day = excerptDayRepository.findById(tomorrow).orElse(new ExcerptDay());
+        day.setDate(tomorrow);
+        day.setExcerpt(excerpt);
+        excerptDayRepository.save(day);
+    }
+
     public DailyChallengesDto getDailyChallenges() {
         LocalDate today = LocalDate.now(ZoneId.of("America/Vancouver"));
         LocalDate tomorrow = today.plusDays(1);

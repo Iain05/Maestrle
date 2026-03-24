@@ -53,6 +53,16 @@ public class AdminController {
      * @param dto the target status
      * @return 200 on success, 400 if the excerpt is not found
      */
+    @PostMapping("/excerpts/{id}/schedule-tomorrow")
+    public ResponseEntity<?> scheduleTomorrow(@PathVariable Long id) {
+        try {
+            adminService.scheduleTomorrow(id);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping("/daily-challenges")
     public ResponseEntity<DailyChallengesDto> getDailyChallenges() {
         return ResponseEntity.ok(adminService.getDailyChallenges());
