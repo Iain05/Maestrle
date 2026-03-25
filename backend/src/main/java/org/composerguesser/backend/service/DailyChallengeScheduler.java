@@ -105,16 +105,30 @@ public class DailyChallengeScheduler {
 
     /**
      * Resets {@code current_streak} to 0 for every user who has a streak but no
-     * {@code tbl_user_point} entry for yesterday. Logs how many users were
-     * affected.
+     * {@code tbl_user_point} entry for yesterday, excluding the submitter of
+     * yesterday's excerpt (their streak is preserved). Then increments the streak
+     * for the submitter of today's excerpt, since their featured day counts as a
+     * participation day.
      */
     private void resetExpiredStreaks() {
-        LocalDate yesterday = LocalDate.now(VANCOUVER).minusDays(1);
-        int count = userRepository.resetExpiredStreaks(yesterday);
+        LocalDate today = LocalDate.now(VANCOUVER);
+        LocalDate yesterday = today.minusDays(1);
+
+        Long yesterdaySubmitterId = excerptDayRepository.findById(yesterday)
+                .map(day -> day.getExcerpt().getUploadedByUserId())
+                .orElse(-1L);
+
+        int count = userRepository.resetExpiredStreaks(yesterday, yesterdaySubmitterId);
         if (count > 0) {
             log.info("Expired streaks for {} user(s) who missed {}.", count, yesterday);
         } else {
             log.info("No streaks expired for {}.", yesterday);
         }
+
+        excerptDayRepository.findById(today).ifPresent(day -> {
+            Long submitterId = day.getExcerpt().getUploadedByUserId();
+            userRepository.incrementStreakForSubmitter(submitterId, yesterday);
+            log.info("Incremented streak for submitter of today's excerpt (userId={}).", submitterId);
+        });
     }
 }

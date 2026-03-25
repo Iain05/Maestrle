@@ -32,7 +32,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     int findAllTimeRankByUserId(@Param("userId") Long userId);
 
     /**
-     * Resets current_streak to 0 for every user who has a streak but no point entry for yesterday.
+     * Resets current_streak to 0 for every user who has a streak but no point entry for yesterday,
+     * excluding the submitter of yesterday's excerpt (their streak is handled separately).
+     * Pass -1 as excludeUserId if there is no submitter to exclude.
      * Returns the number of rows updated.
      */
     @Modifying
@@ -42,6 +44,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
             AND user_id NOT IN (
                 SELECT user_id FROM tbl_user_point WHERE excerpt_day_date = :yesterday
             )
+            AND user_id != :excludeUserId
             """, nativeQuery = true)
-    int resetExpiredStreaks(@Param("yesterday") LocalDate yesterday);
+    int resetExpiredStreaks(@Param("yesterday") LocalDate yesterday, @Param("excludeUserId") Long excludeUserId);
+
+    /**
+     * Increments current_streak by 1 for the given user if they have a point entry for yesterday
+     * (streak continues), otherwise sets it to 1 (new streak starts).
+     * Used to credit the submitter of today's daily challenge at midnight.
+     */
+    @Modifying
+    @Query(value = """
+            UPDATE tbl_user SET current_streak =
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM tbl_user_point WHERE user_id = :userId AND excerpt_day_date = :yesterday
+                ) THEN current_streak + 1 ELSE 1 END
+            WHERE user_id = :userId
+            """, nativeQuery = true)
+    void incrementStreakForSubmitter(@Param("userId") Long userId, @Param("yesterday") LocalDate yesterday);
 }
