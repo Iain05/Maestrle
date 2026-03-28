@@ -138,6 +138,13 @@ public class GuessService {
                     userPointRepository.save(new UserPoint(user.getUserId(), today, points, LocalDateTime.now(VANCOUVER)));
                     user.setTotalPoints(user.getTotalPoints() + points);
                     boolean hadYesterday = userPointRepository.existsByUserIdAndExcerptDayDate(user.getUserId(), today.minusDays(1));
+                    if (!hadYesterday) {
+                        // User may have been yesterday's submitter — they can't earn points on their own
+                        // excerpt, so the absence of a point entry doesn't mean they broke their streak.
+                        hadYesterday = excerptDayRepository.findById(today.minusDays(1))
+                                .map(day -> day.getExcerpt().getUploadedByUserId().equals(user.getUserId()))
+                                .orElse(false);
+                    }
                     user.setCurrentStreak(hadYesterday ? user.getCurrentStreak() + 1 : 1);
                     userRepository.save(user);
                     pointsEarned = points;
