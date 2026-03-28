@@ -74,3 +74,9 @@ docker compose --profile prod up -d
 ```
 
 Starts all four services: frontend (nginx, port 80), backend, db, and audio-server. Internal services communicate over the Docker network only — `db`, `audio-server`, and `backend` are not exposed to the host.
+
+Or run with the observability profile as well, to access logs, traces, and metrics through grafana on port 3000.
+
+```bash
+docker compose --profile prod --profile observability up -d
+```
