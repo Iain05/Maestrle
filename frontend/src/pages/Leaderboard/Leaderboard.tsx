@@ -14,6 +14,17 @@ type Tab = 'daily' | 'all-time';
 
 const PAGE_SIZE = 50;
 
+function getUsernameColor(points: number, isTop3: boolean): string {
+  if (points >= 1000) return 'text-amber-400';
+  if (points >= 750) return 'text-orange-500';
+  if (points >= 500) return 'text-fuchsia-500';
+  if (points >= 400) return 'text-violet-500';
+  if (points >= 300) return 'text-blue-500';
+  if (points >= 200) return 'text-cyan-500';
+  if (points >= 100) return 'text-emerald-500';
+  return isTop3 ? 'text-ink' : 'text-ink-muted';
+}
+
 const Leaderboard: React.FC = () => {
   const { token } = useAuth();
   const [tab, setTab] = useState<Tab>('daily');
@@ -164,7 +175,7 @@ const Leaderboard: React.FC = () => {
                           {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
                         </span>
                       </td>
-                      <td className={`py-3.5 px-5 font-semibold ${isTop3 ? 'text-ink' : 'text-ink-muted'}`}>
+                      <td className={`py-3.5 px-5 font-semibold ${getUsernameColor(entry.points, isTop3)}`}>
                         <span>{entry.username}</span>
                         {entry.streak >= 3 && (
                           <span className="ml-2 text-xs font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded-md">
