@@ -14,9 +14,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 public class GuessService {
 
     private static final Logger log = LoggerFactory.getLogger(GuessService.class);
-    private static final ZoneId VANCOUVER = ZoneId.of("America/Vancouver");
 
     private final ExcerptRepository excerptRepository;
     private final ExcerptDayRepository excerptDayRepository;
@@ -45,16 +44,19 @@ public class GuessService {
     private final UserRepository userRepository;
     private final UserPointRepository userPointRepository;
     private final UserGuessRepository userGuessRepository;
+    private final Clock clock;
 
     public GuessService(ExcerptRepository excerptRepository, ExcerptDayRepository excerptDayRepository,
                         ComposerRepository composerRepository, UserRepository userRepository,
-                        UserPointRepository userPointRepository, UserGuessRepository userGuessRepository) {
+                        UserPointRepository userPointRepository, UserGuessRepository userGuessRepository,
+                        Clock clock) {
         this.excerptRepository = excerptRepository;
         this.excerptDayRepository = excerptDayRepository;
         this.composerRepository = composerRepository;
         this.userRepository = userRepository;
         this.userPointRepository = userPointRepository;
         this.userGuessRepository = userGuessRepository;
+        this.clock = clock;
     }
 
     /**
@@ -79,7 +81,7 @@ public class GuessService {
      */
     @Transactional
     public GuessResultDto processGuess(GuessRequestDto request, User user) {
-        LocalDate today = LocalDate.now(VANCOUVER);
+        LocalDate today = LocalDate.now(clock);
 
         Long dailyExcerptId = excerptDayRepository.findById(today)
                 .map(day -> day.getExcerpt().getExcerptId())
@@ -135,7 +137,7 @@ public class GuessService {
                 boolean ownSubmission = excerpt.getUploadedByUserId().equals(user.getUserId());
                 if (!ownSubmission && !userPointRepository.existsByUserIdAndExcerptDayDate(user.getUserId(), today)) {
                     int points = 11 - guessNumber;
-                    userPointRepository.save(new UserPoint(user.getUserId(), today, points, LocalDateTime.now(VANCOUVER)));
+                    userPointRepository.save(new UserPoint(user.getUserId(), today, points, LocalDateTime.now(clock)));
                     user.setTotalPoints(user.getTotalPoints() + points);
                     boolean hadYesterday = userPointRepository.existsByUserIdAndExcerptDayDate(user.getUserId(), today.minusDays(1));
                     if (!hadYesterday) {
@@ -183,7 +185,7 @@ public class GuessService {
     public List<GuessResultDto> getGuessHistory(User user) {
         if (user == null) return List.of();
 
-        LocalDate today = LocalDate.now(VANCOUVER);
+        LocalDate today = LocalDate.now(clock);
         return excerptDayRepository.findById(today)
                 .map(day -> {
                     Excerpt excerpt = day.getExcerpt();
