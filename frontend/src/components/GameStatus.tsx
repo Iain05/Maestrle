@@ -11,9 +11,10 @@ interface GameStatusProps {
   onClose: () => void;
   shareData: ShareData;
   isLoggedIn: boolean;
+  isArchive?: boolean;
 }
 
-const GameStatus: React.FC<GameStatusProps> = ({ won, composerName, pieceTitle, onClose, shareData, isLoggedIn }) => {
+const GameStatus: React.FC<GameStatusProps> = ({ won, composerName, pieceTitle, onClose, shareData, isLoggedIn, isArchive }) => {
   const [closing, setClosing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
@@ -78,7 +79,7 @@ const GameStatus: React.FC<GameStatusProps> = ({ won, composerName, pieceTitle, 
           {copied ? 'Copied!' : 'Share your score'}
         </button>
 
-        {!isLoggedIn && (
+        {!isLoggedIn && !isArchive && (
           <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-xl text-center">
             <p className="text-sm text-ink-muted mb-3">
               Sign in to save your score, track your streak, and appear on the leaderboard.

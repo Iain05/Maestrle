@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.Map;
 
 @RestController
@@ -60,6 +61,47 @@ public class ExcerptController {
                             audioBaseUrl + "/" + day.getExcerpt().getFilename(),
                             day.getChallengeNumber(),
                             today.toString(),
+                            submittedByCurrentUser,
+                            uploaderUsername
+                    ));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Returns the daily challenge for a specific past date.
+     * The date must be in the past (strictly before today in the America/Vancouver timezone).
+     *
+     * @param date ISO date string (YYYY-MM-DD)
+     * @return 200 with {@link DailyChallengeDto}, 400 if the date is today/future or malformed,
+     *         or 404 if no challenge was scheduled for that date
+     */
+    @GetMapping("/challenge/{date}")
+    public ResponseEntity<DailyChallengeDto> getChallengeByDate(@PathVariable String date,
+                                                                 @AuthenticationPrincipal User user) {
+        LocalDate targetDate;
+        try {
+            targetDate = LocalDate.parse(date);
+        } catch (DateTimeParseException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (!targetDate.isBefore(LocalDate.now(PACIFIC))) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return excerptDayRepository.findById(targetDate)
+                .map(day -> {
+                    boolean submittedByCurrentUser = user != null &&
+                            user.getUserId().equals(day.getExcerpt().getUploadedByUserId());
+                    String uploaderUsername = userRepository.findById(day.getExcerpt().getUploadedByUserId())
+                            .map(User::getDisplayUsername)
+                            .orElse("Unknown");
+                    return ResponseEntity.ok(new DailyChallengeDto(
+                            day.getExcerpt().getExcerptId(),
+                            audioBaseUrl + "/" + day.getExcerpt().getFilename(),
+                            day.getChallengeNumber(),
+                            targetDate.toString(),
                             submittedByCurrentUser,
                             uploaderUsername
                     ));

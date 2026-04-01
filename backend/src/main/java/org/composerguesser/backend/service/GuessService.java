@@ -1,5 +1,6 @@
 package org.composerguesser.backend.service;
 
+import org.composerguesser.backend.dto.ArchiveGuessRequestDto;
 import org.composerguesser.backend.dto.GuessRequestDto;
 import org.composerguesser.backend.dto.GuessResultDto;
 import org.composerguesser.backend.model.*;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -127,31 +129,107 @@ public class GuessService {
     }
 
     /**
-     * Returns all of the authenticated user's guesses for today's daily challenge, ordered by guess number.
-     * Used on page load to restore a session in progress.
-     * Returns an empty list if the user is null or no daily challenge exists for today.
+     * Returns the authenticated user's guesses for a daily challenge, ordered by guess number.
+     * Used on page load to restore a session in progress (today's or an archive challenge).
+     * Returns an empty list if the user is null or no challenge exists for the given date.
+     *
+     * @param dateParam ISO date string (YYYY-MM-DD), or {@code null} to default to today
      */
-    public List<GuessResultDto> getGuessHistory(User user) {
+    public List<GuessResultDto> getGuessHistory(User user, String dateParam) {
         if (user == null) return List.of();
 
-        LocalDate today = LocalDate.now(clock);
-        return excerptDayRepository.findById(today)
+        LocalDate date;
+        if (dateParam != null) {
+            try {
+                date = LocalDate.parse(dateParam);
+            } catch (DateTimeParseException e) {
+                return List.of();
+            }
+        } else {
+            date = LocalDate.now(clock);
+        }
+
+        return excerptDayRepository.findById(date)
                 .map(day -> {
                     Excerpt excerpt = day.getExcerpt();
                     Composer target = composerRepository.findById(excerpt.getComposerId()).orElse(null);
                     if (target == null) return List.<GuessResultDto>of();
 
-                    Integer rawPoints = userPointRepository.findDailyPointsByUserIdAndDate(user.getUserId(), today);
-                    int todayPoints = rawPoints != null ? rawPoints : 0;
+                    Integer rawPoints = userPointRepository.findDailyPointsByUserIdAndDate(user.getUserId(), date);
+                    int datePoints = rawPoints != null ? rawPoints : 0;
 
                     return userGuessRepository
-                            .findByUserIdAndDateOrderByGuessNumber(user.getUserId(), today)
+                            .findByUserIdAndDateOrderByGuessNumber(user.getUserId(), date)
                             .stream()
-                            .map(ug -> buildHistoryEntry(ug, excerpt, target, todayPoints))
+                            .map(ug -> buildHistoryEntry(ug, excerpt, target, datePoints))
                             .filter(Objects::nonNull)
                             .collect(Collectors.toList());
                 })
                 .orElse(List.of());
+    }
+
+    /**
+     * Processes a composer guess for a past daily challenge.
+     * Behaves the same as {@link #processGuess} but validates against the given archive date,
+     * and never awards points or updates streaks.
+     *
+     * @param request contains {@code excerptId}, {@code composerId}, and the archive {@code date}
+     * @param user    the authenticated user, or {@code null} for anonymous play
+     * @throws IllegalArgumentException if the date is invalid, not in the past, or has no challenge
+     */
+    @Transactional
+    public GuessResultDto processArchiveGuess(ArchiveGuessRequestDto request, User user) {
+        LocalDate archiveDate;
+        try {
+            archiveDate = LocalDate.parse(request.getDate());
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid date format");
+        }
+
+        if (!archiveDate.isBefore(LocalDate.now(clock))) {
+            throw new IllegalArgumentException("Archive guesses can only be submitted for past challenges");
+        }
+
+        ExcerptDay day = excerptDayRepository.findById(archiveDate)
+                .orElseThrow(() -> new IllegalArgumentException("No challenge found for this date"));
+
+        if (!request.getExcerptId().equals(day.getExcerpt().getExcerptId())) {
+            throw new IllegalArgumentException("Excerpt does not match the challenge for this date");
+        }
+
+        Excerpt excerpt = excerptRepository.findById(request.getExcerptId())
+                .orElseThrow(() -> new IllegalArgumentException("Excerpt not found"));
+        Composer target = composerRepository.findById(excerpt.getComposerId())
+                .orElseThrow(() -> new IllegalArgumentException("Target composer not found"));
+        Composer guessed = composerRepository.findById(request.getComposerId())
+                .orElseThrow(() -> new IllegalArgumentException("Guessed composer not found"));
+
+        boolean correct = guessed.getComposerId().equals(target.getComposerId());
+
+        if (user != null) {
+            if (userGuessRepository.existsByUserIdAndDateAndComposerId(user.getUserId(), archiveDate, guessed.getComposerId())) {
+                throw new IllegalArgumentException("You have already guessed that composer");
+            }
+            recordGuess(user, excerpt, guessed, archiveDate);
+        }
+
+        return new GuessResultDto(
+                correct,
+                guessed.getLastName(),
+                guessed.getBirthYear(),
+                guessed.getEra().name(),
+                guessed.getNationality(),
+                correct ? "CORRECT" : "WRONG",
+                getYearHint(guessed.getBirthYear(), target.getBirthYear()),
+                getEraHint(guessed.getEra(), target.getEra()),
+                guessed.getNationality().equals(target.getNationality()) ? "CORRECT" : "WRONG",
+                excerpt.getName(),
+                target.getCompleteName(),
+                excerpt.getCompositionYear(),
+                excerpt.getDescription(),
+                0,
+                user != null ? user.getCurrentStreak() : 0
+        );
     }
 
     // -------------------------------------------------------------------------

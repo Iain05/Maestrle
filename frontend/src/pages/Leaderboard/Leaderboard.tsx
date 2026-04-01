@@ -36,7 +36,7 @@ const Leaderboard: React.FC = () => {
 
   useEffect(() => {
     if (!token) return;
-    getMyRank(token).then(setMyRank).catch(() => {});
+    getMyRank(token).then(setMyRank).catch(() => { });
   }, [token]);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ const Leaderboard: React.FC = () => {
   const backLink = (
     <Link
       to="/"
-      className="px-3 py-2 bg-surface border border-border text-ink-muted text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
+      className="px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
     >
       ← Back to game
     </Link>
@@ -80,21 +80,19 @@ const Leaderboard: React.FC = () => {
         <div className="flex rounded-xl overflow-hidden border-2 border-border">
           <button
             onClick={() => switchTab('daily')}
-            className={`flex-1 py-2.5 font-semibold transition-colors ${
-              tab === 'daily'
+            className={`flex-1 py-2.5 font-semibold transition-colors ${tab === 'daily'
                 ? 'bg-primary text-primary-text'
                 : 'bg-surface text-ink-muted hover:bg-canvas'
-            }`}
+              }`}
           >
             Today
           </button>
           <button
             onClick={() => switchTab('all-time')}
-            className={`flex-1 py-2.5 font-semibold transition-colors ${
-              tab === 'all-time'
+            className={`flex-1 py-2.5 font-semibold transition-colors ${tab === 'all-time'
                 ? 'bg-primary text-primary-text'
                 : 'bg-surface text-ink-muted hover:bg-canvas'
-            }`}
+              }`}
           >
             All-Time
           </button>

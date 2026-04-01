@@ -15,6 +15,14 @@ export async function getDailyChallenge(token?: string | null): Promise<DailyCha
   return res.json();
 }
 
+export async function getChallengeByDate(date: string, token?: string | null): Promise<DailyChallenge> {
+  const res = await fetch(`/api/excerpt/challenge/${date}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error('No challenge found for this date');
+  return res.json();
+}
+
 export async function getSubmissionPointsRemaining(token: string): Promise<number> {
   const res = await fetch('/api/excerpt/submission-points-remaining', {
     headers: { Authorization: `Bearer ${token}` },

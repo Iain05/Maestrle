@@ -16,11 +16,27 @@ export interface GuessResult {
   newStreak: number;
 }
 
-export async function getMyGuesses(token: string): Promise<GuessResult[]> {
-  const res = await fetch('/api/guess', {
+export async function getMyGuesses(token: string, date?: string): Promise<GuessResult[]> {
+  const url = date ? `/api/guess?date=${date}` : '/api/guess';
+  const res = await fetch(url, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Failed to fetch guess history');
+  return res.json();
+}
+
+export async function submitArchiveGuess(excerptId: number, composerId: number, date: string, token: string | null): Promise<GuessResult> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch('/api/guess/archive', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ excerptId, composerId, date }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? 'Failed to submit guess');
+  }
   return res.json();
 }
 

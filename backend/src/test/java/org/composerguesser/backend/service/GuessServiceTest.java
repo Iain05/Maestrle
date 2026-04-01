@@ -396,20 +396,20 @@ class GuessServiceTest {
 
     @Test
     void getGuessHistory_nullUser_returnsEmptyList() {
-        assertThat(guessService.getGuessHistory(null)).isEmpty();
+        assertThat(guessService.getGuessHistory(null, null)).isEmpty();
     }
 
     @Test
     void getGuessHistory_noDailyChallenge_returnsEmptyList() {
         when(excerptDayRepository.findById(TODAY)).thenReturn(Optional.empty());
-        assertThat(guessService.getGuessHistory(makeUser(USER_ID, 0, 0))).isEmpty();
+        assertThat(guessService.getGuessHistory(makeUser(USER_ID, 0, 0), null)).isEmpty();
     }
 
     @Test
     void getGuessHistory_noGuessesYet_returnsEmptyList() {
         User user = makeUser(USER_ID, 0, 0);
         when(userGuessRepository.findByUserIdAndDateOrderByGuessNumber(USER_ID, TODAY)).thenReturn(List.of());
-        assertThat(guessService.getGuessHistory(user)).isEmpty();
+        assertThat(guessService.getGuessHistory(user, null)).isEmpty();
     }
 
     @Test
@@ -421,7 +421,7 @@ class GuessServiceTest {
         ));
         when(userPointRepository.findDailyPointsByUserIdAndDate(USER_ID, TODAY)).thenReturn(null);
 
-        List<GuessResultDto> history = guessService.getGuessHistory(user);
+        List<GuessResultDto> history = guessService.getGuessHistory(user, null);
 
         assertThat(history).hasSize(2);
         assertThat(history.get(0).isCorrect()).isFalse();
@@ -438,7 +438,7 @@ class GuessServiceTest {
         ));
         when(userPointRepository.findDailyPointsByUserIdAndDate(USER_ID, TODAY)).thenReturn(10);
 
-        List<GuessResultDto> history = guessService.getGuessHistory(user);
+        List<GuessResultDto> history = guessService.getGuessHistory(user, null);
 
         assertThat(history.get(0).getPointsEarned()).isEqualTo(10);
     }

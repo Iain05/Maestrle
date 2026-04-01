@@ -1,11 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { MAX_GUESSES } from '@src/data/gameData';
-import { submitGuess as submitGuessApi, getMyGuesses, type GuessResult } from '@src/api/guess';
+import { submitGuess as submitGuessApi, submitArchiveGuess, getMyGuesses, type GuessResult } from '@src/api/guess';
 import { storePendingGuess } from '@src/utils/replayPendingGuesses';
 
 const HISTORY_STAGGER_MS = 500;
 
-export function useGameState(excerptId: number | null, token: string | null, onPointsEarned: (points: number, newStreak: number) => void) {
+export function useGameState(excerptId: number | null, token: string | null, onPointsEarned: (points: number, newStreak: number) => void, archiveDate?: string) {
   const [guesses, setGuesses] = useState<GuessResult[]>([]);
   const [gameKey, setGameKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +22,7 @@ export function useGameState(excerptId: number | null, token: string | null, onP
     let ignored = false;
     setIsLoading(true);
 
-    getMyGuesses(token)
+    getMyGuesses(token, archiveDate)
       .then((history) => {
         if (ignored) return;
         if (history.length === 0) {
@@ -44,7 +44,7 @@ export function useGameState(excerptId: number | null, token: string | null, onP
       timeoutsRef.current.forEach(clearTimeout);
       timeoutsRef.current = [];
     };
-  }, [excerptId, token]);
+  }, [excerptId, token, archiveDate]);
 
   // Returns null on success, or an error message string on failure.
   const submitGuess = useCallback(async (composerId: number): Promise<string | null> => {
@@ -55,8 +55,10 @@ export function useGameState(excerptId: number | null, token: string | null, onP
     }
 
     try {
-      const result = await submitGuessApi(excerptId, composerId, token);
-      if (!token) storePendingGuess(excerptId, composerId);
+      const result = archiveDate
+        ? await submitArchiveGuess(excerptId, composerId, archiveDate, token)
+        : await submitGuessApi(excerptId, composerId, token);
+      if (!token && !archiveDate) storePendingGuess(excerptId, composerId);
       guessedIdsRef.current.add(composerId);
       setGuesses((prev) => {
         const next = [...prev, result];
@@ -64,12 +66,12 @@ export function useGameState(excerptId: number | null, token: string | null, onP
         if (gameOver) setJustFinished(true);
         return next;
       });
-      if (result.pointsEarned > 0) onPointsEarned(result.pointsEarned, result.newStreak);
+      if (!archiveDate && result.pointsEarned > 0) onPointsEarned(result.pointsEarned, result.newStreak);
       return null;
     } catch (err) {
       return err instanceof Error ? err.message : 'Something went wrong';
     }
-  }, [excerptId, isGameOver, token, onPointsEarned]);
+  }, [excerptId, isGameOver, token, onPointsEarned, archiveDate]);
 
   const clearJustFinished = useCallback(() => setJustFinished(false), []);
 
