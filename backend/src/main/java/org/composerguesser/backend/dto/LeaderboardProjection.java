@@ -8,4 +8,5 @@ public interface LeaderboardProjection {
     String getUsername();
     int getPoints();
     int getStreak();
+    int getTotalPoints();
 }

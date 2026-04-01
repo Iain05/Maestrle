@@ -16,7 +16,7 @@ public interface UserPointRepository extends JpaRepository<UserPoint, Long> {
     /**
      * Returns all users who scored on the given date, ranked by points descending, with their current streak.
      */
-    @Query(value = "SELECT u.username, up.points, u.current_streak AS streak " +
+    @Query(value = "SELECT u.username, up.points, u.current_streak AS streak, u.total_points AS totalPoints " +
                    "FROM tbl_user_point up JOIN tbl_user u ON up.user_id = u.user_id " +
                    "WHERE up.excerpt_day_date = :date ORDER BY up.points DESC",
            countQuery = "SELECT COUNT(*) FROM tbl_user_point WHERE excerpt_day_date = :date",

@@ -105,7 +105,7 @@ const Leaderboard: React.FC = () => {
           <div className="rounded-2xl border-2 border-primary/40 bg-primary/5 px-5 py-4 flex items-center gap-4 shadow-sm">
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-primary/70 uppercase tracking-wider mb-0.5">Your ranking</p>
-              <p className="font-bold text-ink text-lg truncate">{myRank.username}</p>
+              <p className={`font-bold text-lg truncate ${getUsernameColor(myRank.allTimePoints, true)}`}>{myRank.username}</p>
             </div>
             <div className="flex gap-6 shrink-0">
               {myRank.streak >= 3 && (
@@ -175,7 +175,7 @@ const Leaderboard: React.FC = () => {
                           {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
                         </span>
                       </td>
-                      <td className={`py-3.5 px-5 font-semibold ${getUsernameColor(entry.points, isTop3)}`}>
+                      <td className={`py-3.5 px-5 font-semibold ${getUsernameColor(entry.totalPoints, isTop3)}`}>
                         <span>{entry.username}</span>
                         {entry.streak >= 3 && (
                           <span className="ml-2 text-xs font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded-md">

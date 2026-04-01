@@ -2,6 +2,7 @@ export interface LeaderboardEntry {
   username: string;
   points: number;
   streak: number;
+  totalPoints: number;
 }
 
 export interface LeaderboardPage {

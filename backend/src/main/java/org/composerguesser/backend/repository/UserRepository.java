@@ -19,7 +19,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /**
      * Returns all users ranked by total points descending, with their current streak.
      */
-    @Query(value = "SELECT username, total_points AS points, current_streak AS streak FROM tbl_user ORDER BY total_points DESC",
+    @Query(value = "SELECT username, total_points AS points, current_streak AS streak, total_points AS totalPoints FROM tbl_user ORDER BY total_points DESC",
            countQuery = "SELECT COUNT(*) FROM tbl_user",
            nativeQuery = true)
     Page<LeaderboardProjection> findAllTimeLeaderboard(Pageable pageable);
