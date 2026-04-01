@@ -10,11 +10,11 @@ import { getChallengeByDate } from '@src/api/excerpt';
 import { getComposers, type ComposerSummary } from '@src/api/composer';
 import { useAuth } from '@src/context/AuthContext';
 import { useToast } from '@src/context/ToastContext';
-import { Music, Calendar, ShieldCheck } from 'lucide-react';
+import { Music } from 'lucide-react';
 import type { ShareData } from '@src/utils/shareScore';
 
 const ArchiveChallenge: React.FC = () => {
-  const { token, addPoints, isAdmin, user } = useAuth();
+  const { token, addPoints, user } = useAuth();
   const { showToast } = useToast();
   const { date: dateParam } = useParams();
   const navigate = useNavigate();
