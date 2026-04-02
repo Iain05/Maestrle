@@ -1,9 +1,12 @@
 package org.composerguesser.backend.controller;
 
+import org.composerguesser.backend.dto.ArchiveChallengeDto;
 import org.composerguesser.backend.dto.DailyChallengeDto;
 import org.composerguesser.backend.model.ExcerptDay;
 import org.composerguesser.backend.model.User;
+import org.composerguesser.backend.repository.ArchiveStatusProjection;
 import org.composerguesser.backend.repository.ExcerptDayRepository;
+import org.composerguesser.backend.repository.UserGuessRepository;
 import org.composerguesser.backend.repository.UserRepository;
 import org.composerguesser.backend.service.ExcerptSubmitService;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +19,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/excerpt")
@@ -27,15 +32,18 @@ public class ExcerptController {
     private final ExcerptDayRepository excerptDayRepository;
     private final ExcerptSubmitService excerptSubmitService;
     private final UserRepository userRepository;
+    private final UserGuessRepository userGuessRepository;
     private final String audioBaseUrl;
 
     public ExcerptController(ExcerptDayRepository excerptDayRepository,
                              ExcerptSubmitService excerptSubmitService,
                              UserRepository userRepository,
+                             UserGuessRepository userGuessRepository,
                              @Value("${audio.base-url}") String audioBaseUrl) {
         this.excerptDayRepository = excerptDayRepository;
         this.excerptSubmitService = excerptSubmitService;
         this.userRepository = userRepository;
+        this.userGuessRepository = userGuessRepository;
         this.audioBaseUrl = audioBaseUrl;
     }
 
@@ -107,6 +115,37 @@ public class ExcerptController {
                     ));
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Returns all past daily challenges (before today, most recent first), each annotated with
+     * the authenticated user's play status ({@code guessCount}, {@code correct}).
+     * For unauthenticated requests, {@code guessCount} and {@code correct} are {@code null} for every entry.
+     */
+    @GetMapping("/archive")
+    public ResponseEntity<List<ArchiveChallengeDto>> getArchive(@AuthenticationPrincipal User user) {
+        LocalDate today = LocalDate.now(PACIFIC);
+        List<ExcerptDay> days = excerptDayRepository.findByDateBeforeOrderByDateDesc(today);
+
+        Map<String, ArchiveStatusProjection> statuses = user == null ? Map.of() :
+                userGuessRepository.findArchiveStatuses(user.getUserId())
+                        .stream()
+                        .collect(Collectors.toMap(ArchiveStatusProjection::getDate, p -> p));
+
+        List<ArchiveChallengeDto> result = days.stream()
+                .map(day -> {
+                    String date = day.getDate().toString();
+                    ArchiveStatusProjection status = statuses.get(date);
+                    return new ArchiveChallengeDto(
+                            date,
+                            day.getChallengeNumber(),
+                            status != null ? status.getGuessCount() : 0,
+                            status != null && status.getCorrect()
+                    );
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
     }
 
     /**

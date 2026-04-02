@@ -1,6 +1,7 @@
 package org.composerguesser.backend.service;
 
 import org.composerguesser.backend.dto.ArchiveGuessRequestDto;
+import org.composerguesser.backend.dto.ArchiveStatusDto;
 import org.composerguesser.backend.dto.GuessRequestDto;
 import org.composerguesser.backend.dto.GuessResultDto;
 import org.composerguesser.backend.model.*;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -230,6 +232,21 @@ public class GuessService {
                 0,
                 user != null ? user.getCurrentStreak() : 0
         );
+    }
+
+    /**
+     * Returns the authenticated user's play status for every archive date they have played.
+     * Dates with no guesses are omitted — the caller treats a missing key as "not played".
+     * Returns an empty map for unauthenticated users.
+     */
+    public Map<String, ArchiveStatusDto> getArchiveStatuses(User user) {
+        if (user == null) return Map.of();
+        return userGuessRepository.findArchiveStatuses(user.getUserId())
+                .stream()
+                .collect(Collectors.toMap(
+                        p -> p.getDate(),
+                        p -> new ArchiveStatusDto(p.getGuessCount(), p.getCorrect())
+                ));
     }
 
     // -------------------------------------------------------------------------

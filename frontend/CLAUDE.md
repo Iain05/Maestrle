@@ -17,7 +17,7 @@ React 19 + TypeScript SPA built with Vite. Routing via React Router DOM 7.
 
 **Entry point flow:** `index.html` → `main.tsx` → `App.tsx` (BrowserRouter) → `RouteTable.tsx` → page components
 
-**Route structure:** Routes are defined in `src/RouteTable.tsx`. Currently only one route (`/` → `DailyComposer`). Add new routes there.
+**Route structure:** Routes are defined in `src/RouteTable.tsx`. Current routes: `/` → `DailyComposer`, `/leaderboard` → `Leaderboard`, `/submit` → `SubmitExcerpt`, `/admin` → `AdminReview`, `/challenges` → `PastChallenges`, `/:date` → `ArchiveChallenge`. Add new routes there.
 
 **Pages:** Live in `src/pages/<PageName>/`. Each page has an `index.tsx` re-export and a `<PageName>.tsx` component file.
 

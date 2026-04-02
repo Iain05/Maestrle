@@ -1,3 +1,18 @@
+export interface ArchiveChallenge {
+  date: string;
+  challengeNumber: number;
+  guessCount: number;
+  correct: boolean;
+}
+
+export async function getArchiveChallenges(token?: string | null): Promise<ArchiveChallenge[]> {
+  const res = await fetch('/api/excerpt/archive', {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error('Failed to load archive');
+  return res.json();
+}
+
 export interface DailyChallenge {
   excerptId: number;
   audioUrl: string;

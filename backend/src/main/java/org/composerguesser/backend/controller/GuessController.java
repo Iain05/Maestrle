@@ -1,6 +1,7 @@
 package org.composerguesser.backend.controller;
 
 import org.composerguesser.backend.dto.ArchiveGuessRequestDto;
+import org.composerguesser.backend.dto.ArchiveStatusDto;
 import org.composerguesser.backend.dto.GuessRequestDto;
 import org.composerguesser.backend.dto.GuessResultDto;
 import org.composerguesser.backend.model.User;
@@ -53,6 +54,17 @@ public class GuessController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    /**
+     * Returns the authenticated user's play status for every archive date they have played.
+     * The response is a map from ISO date string (YYYY-MM-DD) to {@link ArchiveStatusDto}.
+     * Dates with no guesses are omitted — a missing key means "not played".
+     * Returns an empty object for unauthenticated users.
+     */
+    @GetMapping("/archive/statuses")
+    public ResponseEntity<Map<String, ArchiveStatusDto>> getArchiveStatuses(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(guessService.getArchiveStatuses(user));
     }
 
     /**

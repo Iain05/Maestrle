@@ -64,10 +64,14 @@ In dev, only `db` and `audio-server` run in Docker. Frontend and backend run loc
 | GET | `/composers` | — | All composers (id + name) for the guess dropdown |
 | GET | `/composers/{id}` | — | Single composer full details |
 | GET | `/composers/{id}/works` | — | All works for a composer (id + title), sorted by title; used to populate the work dropdown on the submit form |
-| GET | `/excerpt/daily-challenge` | — | Today's challenge: `{ excerptId, audioUrl, challengeNumber, date }` |
+| GET | `/excerpt/daily-challenge` | Optional | Today's challenge: `{ excerptId, audioUrl, challengeNumber, date, submittedByCurrentUser, uploaderUsername }` |
+| GET | `/excerpt/archive` | Optional | All past challenges (before today, newest first): `[{ date, challengeNumber, guessCount, correct }]`; `guessCount`/`correct` are `null` when unauthenticated or not played |
+| GET | `/excerpt/challenge/{date}` | Optional | Past challenge for a specific date (YYYY-MM-DD); 400 if date is today or future, 404 if no challenge was scheduled |
 | POST | `/excerpt/submit` | Required | Upload a trimmed WAV + metadata as `multipart/form-data`; creates a `DRAFT` excerpt |
-| GET | `/guess` | Optional | Authenticated user's guess history for today (empty array if anon) |
-| POST | `/guess` | Optional | Submit a guess; returns hint feedback and `pointsEarned`/`newStreak` on win |
+| GET | `/guess` | Optional | Authenticated user's guess history for a challenge; accepts optional `?date=YYYY-MM-DD` for archive dates (empty array if anon) |
+| POST | `/guess` | Optional | Submit a guess for today's challenge; returns hint feedback and `pointsEarned`/`newStreak` on win |
+| POST | `/guess/archive` | Optional | Submit a guess for a past challenge (`{ excerptId, composerId, date }`); no points or streak changes |
+| GET | `/guess/archive/statuses` | Optional | Map of `{ [date]: { guessCount, correct } }` for every archive date the user has played; returns `{}` if unauthenticated |
 | GET | `/leaderboard/daily` | — | Today's leaderboard, paginated (`?page=0&size=20`) |
 | GET | `/leaderboard/all-time` | — | All-time leaderboard by total points, paginated |
 | GET | `/leaderboard/my-rank` | Required | Caller's all-time rank, daily rank, points, and streak |
@@ -93,7 +97,9 @@ In dev, only `db` and `audio-server` run in Docker. Frontend and backend run loc
 - `pages/DailyComposer/` — Main game page. Fetches the daily challenge and composer list on mount, owns `excerptId` and `composers` state, passes them down.
 - `pages/Leaderboard/` — Leaderboard page. Toggles between today/all-time views. Shows a "my rank" card for logged-in users.
 - `pages/SubmitExcerpt/` — Desktop-only excerpt submission page with drag-and-drop audio upload and a waveform trimmer.
-- `hooks/useGameState.ts` — Manages `guesses: GuessResult[]` state. `submitGuess(composerId)` calls `POST /api/guess` and appends the result. `isGameOver` and `won` are derived from guesses.
+- `pages/PastChallenges/` — Archive index page (`/challenges`). Fetches `GET /excerpt/archive` for the full list of past challenges (with user play status if logged in), groups them by month, and renders a card grid. Each card links to `/:date` and shows a Wordle-style guess bar if the user has played.
+- `pages/ArchiveChallenge/` — Archive game page (`/:date`). Loads a past challenge via `GET /excerpt/challenge/{date}` and plays it using the same `useGameState` hook in archive mode (no points, no streak).
+- `hooks/useGameState.ts` — Manages `guesses: GuessResult[]` state. Accepts an optional `archiveDate` param; when set, routes guesses through `POST /api/guess/archive` instead of `POST /api/guess`, and fetches history with `?date=`. `isGameOver` and `won` are derived from guesses.
 - `components/` — `AudioPlayer`, `ComposerSearch`, `GuessControls`, `GuessGrid`, `HintCard`, `GameStatus`, `WaveformTrimmer`, `PageLayout`
 - `context/` — `AuthContext` (JWT token, user profile, `addPoints`, anonymous guess replay on login), `ToastContext` (error toasts)
 - `utils/replayPendingGuesses.ts` — Stores anonymous guesses to `localStorage` and replays them against the API on login/register
@@ -104,11 +110,17 @@ In dev, only `db` and `audio-server` run in Docker. Frontend and backend run loc
 
 **React Compiler** is enabled — avoid manual `useMemo`/`useCallback`.
 
-### Guess flow
-1. `GET /api/excerpt/daily-challenge` → `{ excerptId, audioUrl }`
+### Guess flow (daily)
+1. `GET /api/excerpt/daily-challenge` → `{ excerptId, audioUrl, submittedByCurrentUser, uploaderUsername, ... }`
 2. `GET /api/composers` → `[{ composerId, name }]` (populates search dropdown)
 3. User selects a composer → `ComposerSearch` calls `onSelect(ComposerSummary)` to give `GuessControls` the `composerId`
 4. `POST /api/guess` with `{ excerptId, composerId }` → `GuessResult` with hint fields (`composerHint`, `yearHint`, `eraHint`, `nationalityHint`) and always includes `targetComposerName` + `pieceTitle` for the end screen
+
+### Guess flow (archive)
+1. `GET /api/excerpt/challenge/{date}` → same `DailyChallengeDto` shape as daily challenge
+2. `GET /api/composers` → composer list (same as daily)
+3. `POST /api/guess/archive` with `{ excerptId, composerId, date }` → same `GuessResult` shape; `pointsEarned` and `newStreak` are always 0
+4. Guess history is restored via `GET /api/guess?date={date}` on page load
 
 ### Enums
 - **`era_type`** (PostgreSQL): `BAROQUE`, `CLASSICAL`, `EARLY_ROMANTIC`, `ROMANTIC`, `LATE_ROMANTIC`, `_20TH_CENTURY`, `MODERN`. Java `Era` enum matches. Era adjacency (one step apart = `CLOSE`) is computed by `ordinal()` comparison in `GuessService`.

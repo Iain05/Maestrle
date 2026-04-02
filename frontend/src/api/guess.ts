@@ -1,3 +1,17 @@
+export interface ArchiveStatus {
+  guessCount: number;
+  correct: boolean;
+}
+
+export async function getArchiveStatuses(token: string | null): Promise<Record<string, ArchiveStatus>> {
+  if (!token) return {};
+  const res = await fetch('/api/guess/archive/statuses', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return {};
+  return res.json();
+}
+
 export interface GuessResult {
   correct: boolean;
   composerName: string;

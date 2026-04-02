@@ -1,36 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PageLayout from '@src/components/PageLayout';
-import { getDailyChallenge } from '@src/api/excerpt';
+import { getArchiveChallenges, type ArchiveChallenge } from '@src/api/excerpt';
 import { useAuth } from '@src/context/AuthContext';
 
-interface ChallengeEntry {
-  date: string;
-  challengeNumber: number;
-}
+const MAX_GUESSES = 5;
 
 interface MonthGroup {
   monthKey: string;
   monthLabel: string;
-  challenges: ChallengeEntry[];
+  challenges: ArchiveChallenge[];
 }
 
-function generatePastChallenges(todayDate: string, challengeNumber: number): ChallengeEntry[] {
-  const today = new Date(`${todayDate}T12:00:00`);
-  const challenges: ChallengeEntry[] = [];
-  for (let i = 1; i < challengeNumber; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    challenges.push({
-      date: d.toISOString().split('T')[0],
-      challengeNumber: challengeNumber - i,
-    });
-  }
-  return challenges;
-}
-
-function groupByMonth(challenges: ChallengeEntry[]): MonthGroup[] {
-  const groups = new Map<string, ChallengeEntry[]>();
+function groupByMonth(challenges: ArchiveChallenge[]): MonthGroup[] {
+  const groups = new Map<string, ArchiveChallenge[]>();
   for (const c of challenges) {
     const key = c.date.slice(0, 7);
     if (!groups.has(key)) groups.set(key, []);
@@ -52,6 +35,19 @@ function formatCardDate(dateStr: string) {
   };
 }
 
+function GuessBar({ guessCount, correct }: { guessCount: number; correct: boolean }) {
+  return (
+    <div className="flex gap-1 mt-2 pl-8 pr-8 w-full">
+      {Array.from({ length: MAX_GUESSES }).map((_, i) => (
+        <div
+          key={i}
+          className={`aspect-square flex-1 rounded-sm ${i >= guessCount ? 'bg-border' : correct ? 'bg-green-500' : guessCount < MAX_GUESSES ? 'bg-yellow-400' : 'bg-red-400'}`}
+        />
+      ))}
+    </div>
+  );
+}
+
 const PastChallenges: React.FC = () => {
   const { token } = useAuth();
   const [monthGroups, setMonthGroups] = useState<MonthGroup[]>([]);
@@ -59,14 +55,8 @@ const PastChallenges: React.FC = () => {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    getDailyChallenge(token)
-      .then(({ challengeNumber, date }) => {
-        if (!challengeNumber || !date || challengeNumber <= 1) {
-          setMonthGroups([]);
-          return;
-        }
-        setMonthGroups(groupByMonth(generatePastChallenges(date, challengeNumber)));
-      })
+    getArchiveChallenges(token)
+      .then((challenges) => setMonthGroups(groupByMonth(challenges)))
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [token]);
@@ -123,7 +113,7 @@ const PastChallenges: React.FC = () => {
           <section key={monthKey}>
             <h2 className="serif text-xl text-ink mb-3">{monthLabel}</h2>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-              {challenges.map(({ date, challengeNumber }) => {
+              {challenges.map(({ date, challengeNumber, guessCount, correct }) => {
                 const { dayName, day, month } = formatCardDate(date);
                 return (
                   <Link
@@ -134,6 +124,7 @@ const PastChallenges: React.FC = () => {
                     <span className="text-primary font-bold text-base leading-none mb-1.5">#{challengeNumber}</span>
                     <span className="text-ink font-semibold text-sm leading-tight">{dayName} {day}</span>
                     <span className="text-ink-muted text-xs">{month}</span>
+                    <GuessBar guessCount={guessCount} correct={correct} />
                   </Link>
                 );
               })}
