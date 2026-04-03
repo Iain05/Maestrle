@@ -9,5 +9,6 @@ public record ArchiveChallengeDto(
         String date,
         int challengeNumber,
         int guessCount,
-        boolean correct
+        boolean correct,
+        boolean isSubmitter
 ) {}

@@ -3,6 +3,7 @@ export interface ArchiveChallenge {
   challengeNumber: number;
   guessCount: number;
   correct: boolean;
+  isSubmitter: boolean;
 }
 
 export async function getArchiveChallenges(token?: string | null): Promise<ArchiveChallenge[]> {

@@ -113,14 +113,17 @@ const PastChallenges: React.FC = () => {
           <section key={monthKey}>
             <h2 className="serif text-xl text-ink mb-3">{monthLabel}</h2>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-              {challenges.map(({ date, challengeNumber, guessCount, correct }) => {
+              {challenges.map(({ date, challengeNumber, guessCount, correct, isSubmitter }) => {
                 const { dayName, day, month } = formatCardDate(date);
                 return (
                   <Link
                     key={date}
                     to={`/${date}`}
-                    className="flex flex-col items-center py-4 px-2 bg-surface border border-border rounded-2xl shadow-sm hover:shadow-md hover:border-border-hover transition-all text-center"
+                    className="relative flex flex-col items-center py-4 px-2 bg-surface border border-border rounded-2xl shadow-sm hover:shadow-md hover:border-border-hover transition-all text-center"
                   >
+                    {isSubmitter && (
+                      <span className="absolute top-2 right-2 text-[10px] font-bold text-primary leading-none" title="You submitted this">★</span>
+                    )}
                     <span className="text-primary font-bold text-base leading-none mb-1.5">#{challengeNumber}</span>
                     <span className="text-ink font-semibold text-sm leading-tight">{dayName} {day}</span>
                     <span className="text-ink-muted text-xs">{month}</span>

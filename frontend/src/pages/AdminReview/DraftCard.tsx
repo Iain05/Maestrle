@@ -60,7 +60,7 @@ const DraftCard: React.FC<DraftCardProps> = ({ excerpt, composers, token, tomorr
       })
       .catch(() => setWorks([]))
       .finally(() => setWorksLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expanded]);
 
   function handleComposerSelect(c: ComposerSummary) {
@@ -115,10 +115,10 @@ const DraftCard: React.FC<DraftCardProps> = ({ excerpt, composers, token, tomorr
         await approveExcerpt(excerpt.excerptId, metadataPayload, token);
       } else {
         const statusMap: Record<Exclude<PendingAction, 'approve' | 'save'>, ExcerptStatus> = {
-          reject:   'REJECTED',
+          reject: 'REJECTED',
           unreject: 'DRAFT',
-          delete:   'DELETED',
-          restore:  'ACTIVE',
+          delete: 'DELETED',
+          restore: 'ACTIVE',
         };
         await updateExcerptStatus(excerpt.excerptId, statusMap[pendingAction], token);
       }
@@ -138,8 +138,8 @@ const DraftCard: React.FC<DraftCardProps> = ({ excerpt, composers, token, tomorr
   const workPlaceholder = !selectedComposer
     ? 'Select a composer first'
     : worksLoading ? 'Loading works…'
-    : works.length === 0 ? 'No works on record'
-    : 'Search work…';
+      : works.length === 0 ? 'No works on record'
+        : 'Search work…';
 
   return (
     <>
@@ -231,8 +231,8 @@ const DraftCard: React.FC<DraftCardProps> = ({ excerpt, composers, token, tomorr
                 </div>
               </div>
 
-              <div className="grid grid-cols-6 gap-4">
-                <div className="col-span-5 flex flex-col gap-1.5">
+              <div className="flex gap-4 items-start">
+                <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                   <label className="text-sm font-semibold text-ink">
                     Title <span className="text-primary">*</span>
                   </label>
@@ -245,7 +245,7 @@ const DraftCard: React.FC<DraftCardProps> = ({ excerpt, composers, token, tomorr
                     className="w-full px-4 py-3 bg-surface text-ink placeholder:text-ink-subtle border-2 border-border rounded-xl focus:border-primary focus:outline-none transition-all"
                   />
                 </div>
-                <div className="col-span-1 flex flex-col gap-1.5">
+                <div className="shrink-0 flex flex-col gap-1.5">
                   <label className="text-sm font-semibold text-ink">
                     Year <span className="text-ink-subtle font-normal">(opt.)</span>
                   </label>
@@ -255,8 +255,8 @@ const DraftCard: React.FC<DraftCardProps> = ({ excerpt, composers, token, tomorr
                     value={yearStr}
                     onChange={e => setYearStr(e.target.value.replace(/\D/g, '').slice(0, 4))}
                     maxLength={4}
-                    placeholder="e.g. 1808"
-                    className="w-full px-4 py-3 bg-surface text-ink placeholder:text-ink-subtle border-2 border-border rounded-xl focus:border-primary focus:outline-none transition-all"
+                    placeholder="1808"
+                    className="w-20 px-4 py-3 bg-surface text-ink placeholder:text-ink-subtle border-2 border-border rounded-xl focus:border-primary focus:outline-none transition-all"
                   />
                 </div>
               </div>
@@ -332,11 +332,10 @@ const DraftCard: React.FC<DraftCardProps> = ({ excerpt, composers, token, tomorr
                   <button
                     onClick={() => setPendingAction('save')}
                     disabled={!hasChanges || !canApprove}
-                    className={`flex items-center gap-2 px-5 py-2.5 font-semibold rounded-xl transition-all shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:active:scale-100 ${
-                      hasChanges && canApprove
-                        ? 'bg-green-500 hover:bg-green-600 text-white'
-                        : 'bg-surface border border-border text-ink-subtle opacity-50'
-                    }`}
+                    className={`flex items-center gap-2 px-5 py-2.5 font-semibold rounded-xl transition-all shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:active:scale-100 ${hasChanges && canApprove
+                      ? 'bg-green-500 hover:bg-green-600 text-white'
+                      : 'bg-surface border border-border text-ink-subtle opacity-50'
+                      }`}
                   >
                     <Check className="w-4 h-4" /> Save
                   </button>
