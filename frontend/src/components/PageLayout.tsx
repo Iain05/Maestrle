@@ -40,8 +40,8 @@ const PageLayout: React.FC<PageLayoutProps> = ({ leftSlot, title, subtitle, chil
             onClick={() => setAuthModal('register')}
             className="px-3 py-2 bg-primary text-primary-text text-sm font-semibold rounded-xl shadow-sm hover:bg-primary-hover hover:shadow-md transition-all"
           >
-            <span className="sm:hidden">Register</span>
-            <span className="hidden sm:inline">Create account</span>
+            <span className="lg:hidden">Register</span>
+            <span className="hidden lg:inline">Create account</span>
           </button>
         </>
       )}

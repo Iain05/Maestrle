@@ -67,13 +67,13 @@ const PastChallenges: React.FC = () => {
         to="/leaderboard"
         className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
       >
-        🏆<span className="hidden sm:inline">Leaderboard</span>
+        🏆<span className="hidden lg:inline">Leaderboard</span>
       </Link>
       <Link
         to="/"
         className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
       >
-        ← <span className="hidden sm:inline">Today's Challenge</span>
+        ← <span className="hidden lg:inline">Today's Challenge</span>
       </Link>
     </div>
   );

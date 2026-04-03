@@ -168,7 +168,7 @@ const DraftCard: React.FC<DraftCardProps> = ({ excerpt, composers, token, tomorr
             <span className="text-ink-muted text-sm">{excerpt.composerName}</span>
           </div>
           <div className="flex items-center gap-4 flex-shrink-0 ml-4">
-            <div className="hidden sm:flex flex-col items-end gap-0.5">
+            <div className="hidden md:flex flex-col items-end gap-0.5">
               <span className="text-ink-subtle text-xs">by {excerpt.uploaderUsername}</span>
               <span className="text-ink-subtle text-xs">{formattedDate}</span>
             </div>

@@ -53,33 +53,35 @@ const DailyComposer: React.FC = () => {
   };
 
   const leaderboardLink = (
-    <div className="flex items-center gap-2">
-      <Link
-        to="/leaderboard"
-        className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
-      >
-        🏆<span className="hidden sm:inline">Leaderboard</span>
-      </Link>
-      <Link
-        to="/challenges"
-        className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
-      >
-        📅<span className="hidden sm:inline">Past challenges</span>
-      </Link>
-      <Link
-        to="/submit"
-        className="hidden sm:flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
-      >
-        🎵 Submit excerpt
-      </Link>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <Link
+          to="/leaderboard"
+          className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
+        >
+          🏆<span className="hidden lg:inline">Leaderboard</span>
+        </Link>
+        <Link
+          to="/challenges"
+          className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
+        >
+          📅<span className="hidden lg:inline">Past challenges</span>
+        </Link>
+        <Link
+          to="/submit"
+          className="hidden lg:flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
+        >
+          🎵 Submit excerpt
+        </Link>
+      </div>
       {isAdmin && (
         <Link
           to="/admin"
-          className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
+          className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all self-start"
           title="Admin review"
         >
           <ShieldCheck className="w-4 h-4 text-primary" />
-          <span className="hidden sm:inline">Admin review</span>
+          <span className="hidden lg:inline">Admin review</span>
         </Link>
       )}
     </div>

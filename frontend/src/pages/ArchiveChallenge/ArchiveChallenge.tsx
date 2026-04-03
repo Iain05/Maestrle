@@ -76,13 +76,13 @@ const ArchiveChallenge: React.FC = () => {
         to="/leaderboard"
         className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
       >
-        🏆<span className="hidden sm:inline">Leaderboard</span>
+        🏆<span className="hidden lg:inline">Leaderboard</span>
       </Link>
       <Link
         to="/challenges"
         className="flex items-center gap-2 px-3 py-2 bg-surface border border-border text-ink text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:border-border-hover transition-all"
       >
-        ← <span className="hidden sm:inline">Past Challenges</span>
+        ← <span className="hidden lg:inline">Past Challenges</span>
       </Link>
     </div>
   );
