@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
 
 @RestController
 @RequestMapping("/leaderboard")
@@ -44,6 +46,15 @@ public class LeaderboardController {
             @RequestParam(defaultValue = "10") int size) {
         LocalDate today = LocalDate.now(VANCOUVER);
         return userPointRepository.findDailyLeaderboard(today, PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE)));
+    }
+
+    @GetMapping("/weekly")
+    public Page<LeaderboardProjection> getWeekly(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        LocalDate today = LocalDate.now(VANCOUVER);
+        LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        return userPointRepository.findWeeklyLeaderboard(weekStart, today, PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE)));
     }
 
     /**

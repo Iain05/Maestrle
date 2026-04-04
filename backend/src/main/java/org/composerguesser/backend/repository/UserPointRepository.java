@@ -38,4 +38,17 @@ public interface UserPointRepository extends JpaRepository<UserPoint, Long> {
     @Query(value = "SELECT points FROM tbl_user_point WHERE user_id = :userId AND excerpt_day_date = :date",
            nativeQuery = true)
     Integer findDailyPointsByUserIdAndDate(@Param("userId") Long userId, @Param("date") LocalDate date);
+
+    /**
+     * Returns users ranked by total points earned in the week starting at weekStart through today, inclusive.
+     */
+    @Query(value = "SELECT u.username, CAST(SUM(up.points) AS INTEGER) AS points, u.current_streak AS streak, u.total_points AS totalPoints " +
+                   "FROM tbl_user_point up JOIN tbl_user u ON up.user_id = u.user_id " +
+                   "WHERE up.excerpt_day_date >= :weekStart AND up.excerpt_day_date <= :today " +
+                   "GROUP BY u.username, u.current_streak, u.total_points " +
+                   "ORDER BY SUM(up.points) DESC",
+           countQuery = "SELECT COUNT(DISTINCT up.user_id) FROM tbl_user_point up " +
+                        "WHERE up.excerpt_day_date >= :weekStart AND up.excerpt_day_date <= :today",
+           nativeQuery = true)
+    Page<LeaderboardProjection> findWeeklyLeaderboard(@Param("weekStart") LocalDate weekStart, @Param("today") LocalDate today, Pageable pageable);
 }

@@ -27,6 +27,12 @@ export async function getAllTimeLeaderboard(page = 0, size = 10): Promise<Leader
   return res.json();
 }
 
+export async function getWeeklyLeaderboard(page = 0, size = 10): Promise<LeaderboardPage> {
+  const res = await fetch(`/api/leaderboard/weekly?page=${page}&size=${size}`);
+  if (!res.ok) throw new Error('Failed to fetch leaderboard');
+  return res.json();
+}
+
 export interface MyRank {
   username: string;
   allTimeRank: number;

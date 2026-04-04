@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   getDailyLeaderboard,
+  getWeeklyLeaderboard,
   getAllTimeLeaderboard,
   getMyRank,
   type LeaderboardPage,
@@ -10,7 +11,7 @@ import {
 import { useAuth } from '@src/context/AuthContext';
 import PageLayout from '@src/components/PageLayout';
 
-type Tab = 'daily' | 'all-time';
+type Tab = 'daily' | 'weekly' | 'all-time';
 
 const PAGE_SIZE = 50;
 
@@ -29,7 +30,9 @@ const Leaderboard: React.FC = () => {
   const { token } = useAuth();
   const [tab, setTab] = useState<Tab>('daily');
   const [page, setPage] = useState(0);
-  const [data, setData] = useState<LeaderboardPage | null>(null);
+  const [dailyData, setDailyData] = useState<LeaderboardPage | null>(null);
+  const [weeklyData, setWeeklyData] = useState<LeaderboardPage | null>(null);
+  const [allTimeData, setAllTimeData] = useState<LeaderboardPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [myRank, setMyRank] = useState<MyRank | null>(null);
@@ -39,23 +42,50 @@ const Leaderboard: React.FC = () => {
     getMyRank(token).then(setMyRank).catch(() => { });
   }, [token]);
 
+  // Fetch all three leaderboards in parallel on mount
   useEffect(() => {
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      getDailyLeaderboard(0, PAGE_SIZE),
+      getWeeklyLeaderboard(0, PAGE_SIZE),
+      getAllTimeLeaderboard(0, PAGE_SIZE),
+    ])
+      .then(([daily, weekly, allTime]) => {
+        setDailyData(daily);
+        setWeeklyData(weekly);
+        setAllTimeData(allTime);
+      })
+      .catch(() => setError('Could not load leaderboard.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Fetch paginated data when navigating beyond page 0
+  useEffect(() => {
+    if (page === 0) return;
     setLoading(true);
     setError(null);
     const fetch = tab === 'daily'
       ? getDailyLeaderboard(page, PAGE_SIZE)
-      : getAllTimeLeaderboard(page, PAGE_SIZE);
+      : tab === 'weekly'
+        ? getWeeklyLeaderboard(page, PAGE_SIZE)
+        : getAllTimeLeaderboard(page, PAGE_SIZE);
     fetch
-      .then(setData)
+      .then((result) => {
+        if (tab === 'daily') setDailyData(result);
+        else if (tab === 'weekly') setWeeklyData(result);
+        else setAllTimeData(result);
+      })
       .catch(() => setError('Could not load leaderboard.'))
       .finally(() => setLoading(false));
   }, [tab, page]);
+
+  const data = tab === 'daily' ? dailyData : tab === 'weekly' ? weeklyData : allTimeData;
 
   function switchTab(next: Tab) {
     if (next === tab) return;
     setTab(next);
     setPage(0);
-    setData(null);
   }
 
   const startRank = (data?.number ?? 0) * PAGE_SIZE + 1;
@@ -86,6 +116,15 @@ const Leaderboard: React.FC = () => {
               }`}
           >
             Today
+          </button>
+          <button
+            onClick={() => switchTab('weekly')}
+            className={`flex-1 py-2.5 font-semibold transition-colors border-x border-border ${tab === 'weekly'
+                ? 'bg-primary text-primary-text'
+                : 'bg-surface text-ink-muted hover:bg-canvas'
+              }`}
+          >
+            This Week
           </button>
           <button
             onClick={() => switchTab('all-time')}
